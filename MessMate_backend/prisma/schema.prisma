@@ -1,0 +1,455 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR
+}
+
+enum HouseRole {
+  MANAGER
+  MEMBER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BillStatus {
+  UNPAID
+  PAID
+  PENDING_APPROVAL
+}
+
+enum DutyStatus {
+  UPCOMING
+  CURRENT
+  COMPLETED
+}
+
+enum PaymentMethod {
+  CASH
+  BKASH
+  NAGAD
+  BANK_TRANSFER
+  ROCKET
+}
+
+enum MonthStatus {
+  OPEN
+  GENERATED
+  CLOSED
+}
+
+enum NotificationPriority {
+  NORMAL
+  WARNING
+  IMPORTANT
+}
+
+model User {
+  id              String         @id @default(uuid()) @db.Uuid
+  email           String         @unique
+  username        String?        @unique
+  password        String
+  firstName       String?        @map("first_name")
+  lastName        String?        @map("last_name")
+  avatarUrl       String?        @map("avatar_url")
+  phoneNumber     String?        @map("phone_number")
+  role            Role           @default(USER)
+  status          UserStatus     @default(ACTIVE)
+  isEmailVerified Boolean        @default(false) @map("is_email_verified")
+  lastLoginAt     DateTime?      @map("last_login_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+
+  refreshTokens   RefreshToken[]
+  otps            OtpToken[]
+  posts           Post[]
+  auditLogs       AuditLog[]
+  houseMemberships HouseMember[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  userId    String   @db.Uuid @map("user_id")
+  device    String?
+  ipAddress String?  @map("ip_address")
+  expiresAt DateTime @map("expires_at")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model OtpToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  code      String
+  type      OtpType  @default(EMAIL_VERIFICATION)
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  userId    String?  @db.Uuid @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, type])
+  @@map("otp_tokens")
+}
+
+model House {
+  id                String            @id @default(uuid()) @db.Uuid
+  name              String
+  address           String
+  description       String?
+  inviteCode        String            @unique @map("invite_code")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  settings          HouseSetting?
+  members           HouseMember[]
+  mealSchedules     WeeklySchedule[]
+  dailyMeals        DailyMealRecord[]
+  mealStops         MealStopRequest[]
+  guestMeals        GuestMeal[]
+  marketDuties      MarketDuty[]
+  marketExpenses    MarketExpense[]
+  houseExpenses     HouseExpense[]
+  fines             Fine[]
+  walletPayments    WalletPayment[]
+  monthlyClosings   MonthlyClosing[]
+  notifications     Notification[]
+
+  @@map("houses")
+}
+
+model HouseSetting {
+  id                  String   @id @default(uuid()) @db.Uuid
+  houseId             String   @unique @db.Uuid @map("house_id")
+  breakfastWeight     Decimal  @default(0.5) @db.Decimal(3, 2) @map("breakfast_weight")
+  lunchWeight         Decimal  @default(1.0) @db.Decimal(3, 2) @map("lunch_weight")
+  dinnerWeight        Decimal  @default(1.0) @db.Decimal(3, 2) @map("dinner_weight")
+  lowWalletThreshold  Decimal  @default(500.00) @db.Decimal(10, 2) @map("low_wallet_threshold")
+  guestMealRule       String   @default("HOST_PAYS") @map("guest_meal_rule")
+  fineAllocation      String   @default("HOUSE_FUND") @map("fine_allocation")
+  dutyDurationDays    Int      @default(3) @map("duty_duration_days")
+
+  house               House    @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
+  @@map("house_settings")
+}
+
+model HouseMember {
+  id            String       @id @default(uuid()) @db.Uuid
+  houseId       String       @db.Uuid @map("house_id")
+  userId        String       @db.Uuid @map("user_id")
+  role          HouseRole    @default(MEMBER)
+  status        MemberStatus @default(ACTIVE)
+  mealPlan      String       @default("Full") @map("meal_plan")
+  joinedAt      DateTime     @default(now()) @map("joined_at")
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  house         House        @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
+  weeklySchedule WeeklySchedule[]
+  dailyMeals     DailyMealRecord[]
+  mealStops      MealStopRequest[]
+  guestMeals     GuestMeal[]         @relation("HostMember")
+  marketDuties   MarketDuty[]
+  marketExpenses MarketExpense[]
+  houseExpenses  HouseExpense[]      @relation("PaidByMember")
+  fines          Fine[]
+  walletPayments WalletPayment[]
+  settlementSnapshots MemberSettlementSnapshot[]
+
+  @@unique([houseId, userId])
+  @@map("house_members")
+}
+
+model WeeklySchedule {
+  id            String      @id @default(uuid()) @db.Uuid
+  houseId       String      @db.Uuid @map("house_id")
+  memberId      String      @db.Uuid @map("member_id")
+  dayOfWeek     Int         // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  breakfast     Boolean     @default(true)
+  lunch         Boolean     @default(true)
+  dinner        Boolean     @default(true)
+
+  house         House       @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, dayOfWeek])
+  @@map("weekly_schedules")
+}
+
+model DailyMealRecord {
+  id            String      @id @default(uuid()) @db.Uuid
+  houseId       String      @db.Uuid @map("house_id")
+  memberId      String      @db.Uuid @map("member_id")
+  date          DateTime    @db.Date
+  breakfast     Boolean     @default(true)
+  lunch         Boolean     @default(true)
+  dinner        Boolean     @default(true)
+  weightedCount Decimal     @db.Decimal(4, 2) @map("weighted_count")
+  isOverride    Boolean     @default(false) @map("is_override")
+  stopRequestId String?     @db.Uuid @map("stop_request_id")
+
+  house         House       @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, date])
+  @@map("daily_meal_records")
+}
+
+model MealStopRequest {
+  id            String        @id @default(uuid()) @db.Uuid
+  houseId       String        @db.Uuid @map("house_id")
+  memberId      String        @db.Uuid @map("member_id")
+  startDate     DateTime      @db.Date @map("start_date")
+  endDate       DateTime      @db.Date @map("end_date")
+  reason        String
+  status        RequestStatus @default(PENDING)
+  approvedById  String?       @db.Uuid @map("approved_by_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  house         House         @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("meal_stop_requests")
+}
+
+model GuestMeal {
+  id            String      @id @default(uuid()) @db.Uuid
+  houseId       String      @db.Uuid @map("house_id")
+  hostMemberId  String      @db.Uuid @map("host_member_id")
+  guestName     String      @map("guest_name")
+  startDate     DateTime    @db.Date @map("start_date")
+  endDate       DateTime    @db.Date @map("end_date")
+  breakfast     Boolean     @default(false)
+  lunch         Boolean     @default(true)
+  dinner        Boolean     @default(true)
+  totalMeals    Decimal     @db.Decimal(5, 2) @map("total_meals")
+  cost          Decimal     @db.Decimal(10, 2)
+  status        String      @default("ACTIVE") // ACTIVE | COMPLETED
+
+  house         House       @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  hostMember    HouseMember @relation("HostMember", fields: [hostMemberId], references: [id], onDelete: Cascade)
+
+  @@map("guest_meals")
+}
+
+model MarketDuty {
+  id            String      @id @default(uuid()) @db.Uuid
+  houseId       String      @db.Uuid @map("house_id")
+  memberId      String      @db.Uuid @map("member_id")
+  startDate     DateTime    @db.Date @map("start_date")
+  endDate       DateTime    @db.Date @map("end_date")
+  status        DutyStatus  @default(UPCOMING)
+  notes         String?
+
+  house         House       @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("market_duties")
+}
+
+model MarketExpense {
+  id            String        @id @default(uuid()) @db.Uuid
+  houseId       String        @db.Uuid @map("house_id")
+  memberId      String        @db.Uuid @map("member_id")
+  date          DateTime      @db.Date
+  amount        Decimal       @db.Decimal(10, 2)
+  category      String
+  description   String
+  receiptUrl    String?       @map("receipt_url")
+  status        RequestStatus @default(PENDING)
+
+  house         House         @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("market_expenses")
+}
+
+model HouseExpense {
+  id             String      @id @default(uuid()) @db.Uuid
+  houseId        String      @db.Uuid @map("house_id")
+  category       String      // Electricity, House Rent, Buya / Maid, Internet, Gas, Water, Other
+  month          String      // YYYY-MM
+  amount         Decimal     @db.Decimal(10, 2)
+  paidByMemberId String?     @db.Uuid @map("paid_by_member_id")
+  description    String?
+  dueDate        DateTime?   @db.Date @map("due_date")
+  status         BillStatus  @default(UNPAID)
+  units          Int?        
+  prevReading    Int?        @map("prev_reading")
+  currReading    Int?        @map("curr_reading")
+
+  house          House       @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  paidByMember   HouseMember? @relation("PaidByMember", fields: [paidByMemberId], references: [id], onDelete: SetNull)
+
+  @@map("house_expenses")
+}
+
+model WalletPayment {
+  id            String        @id @default(uuid()) @db.Uuid
+  houseId       String        @db.Uuid @map("house_id")
+  memberId      String        @db.Uuid @map("member_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  date          DateTime      @db.Date
+  method        PaymentMethod @default(CASH)
+  reference     String?
+  note          String?
+  status        RequestStatus @default(PENDING)
+
+  house         House         @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_payments")
+}
+
+model Fine {
+  id            String      @id @default(uuid()) @db.Uuid
+  houseId       String      @db.Uuid @map("house_id")
+  memberId      String      @db.Uuid @map("member_id")
+  amount        Decimal     @db.Decimal(10, 2)
+  reason        String
+  date          DateTime    @db.Date
+  status        String      @default("applied") // applied | cancelled
+  allocation    String      @default("House fund")
+
+  house         House       @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  member        HouseMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("fines")
+}
+
+model MonthlyClosing {
+  id                 String       @id @default(uuid()) @db.Uuid
+  houseId            String       @db.Uuid @map("house_id")
+  month              String       // YYYY-MM
+  status             MonthStatus  @default(OPEN)
+  totalFoodExpense   Decimal      @db.Decimal(10, 2) @map("total_food_expense")
+  totalWeightedMeals Decimal      @db.Decimal(10, 2) @map("total_weighted_meals")
+  finalMealRate      Decimal      @db.Decimal(10, 2) @map("final_meal_rate")
+  totalOtherExpense  Decimal      @db.Decimal(10, 2) @map("total_other_expense")
+  closedAt           DateTime?    @map("closed_at")
+
+  house              House        @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  snapshots          MemberSettlementSnapshot[]
+
+  @@unique([houseId, month])
+  @@map("monthly_closings")
+}
+
+model MemberSettlementSnapshot {
+  id                  String         @id @default(uuid()) @db.Uuid
+  monthlyClosingId    String         @db.Uuid @map("monthly_closing_id")
+  memberId            String         @db.Uuid @map("member_id")
+  totalMeals          Decimal        @db.Decimal(10, 2) @map("total_meals")
+  mealCost            Decimal        @db.Decimal(10, 2) @map("meal_cost")
+  otherShare          Decimal        @db.Decimal(10, 2) @map("other_share")
+  guestMealCost       Decimal        @default(0) @db.Decimal(10, 2) @map("guest_meal_cost")
+  fines               Decimal        @default(0) @db.Decimal(10, 2)
+  totalResponsibility Decimal        @db.Decimal(10, 2) @map("total_responsibility")
+  paid                Decimal        @db.Decimal(10, 2)
+  balance             Decimal        @db.Decimal(10, 2)
+  status              String         // RECEIVE | PAY | SETTLED
+
+  monthlyClosing      MonthlyClosing @relation(fields: [monthlyClosingId], references: [id], onDelete: Cascade)
+  member              HouseMember    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("member_settlement_snapshots")
+}
+
+model Notification {
+  id                String               @id @default(uuid()) @db.Uuid
+  houseId           String               @db.Uuid @map("house_id")
+  recipientMemberId String?              @db.Uuid @map("recipient_member_id")
+  type              String
+  title             String
+  message           String
+  priority          NotificationPriority @default(NORMAL)
+  read              Boolean              @default(false)
+  createdAt         DateTime             @default(now()) @map("created_at")
+
+  house             House                @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Post {
+  id         String   @id @default(uuid()) @db.Uuid
+  slug       String   @unique
+  title      String
+  summary    String?  @db.Text
+  content    String   @db.Text
+  coverImage String?  @map("cover_image")
+  published  Boolean  @default(false)
+  tags       String[] @default([])
+  authorId   String   @db.Uuid @map("author_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@index([slug])
+  @@map("posts")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  details   Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity])
+  @@map("audit_logs")
+}
