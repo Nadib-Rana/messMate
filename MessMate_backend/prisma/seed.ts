@@ -4,80 +4,95 @@ import * as bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("🌱 Seeding MessMate database...");
 
-  const defaultPassword = await bcrypt.hash("admin12345", 10);
-  const userPassword = await bcrypt.hash("user12345", 10);
+  const defaultPassword = await bcrypt.hash("messmate123", 10);
 
-  // 1. Seed Super Admin
-  const superAdmin = await prisma.user.upsert({
-    where: { email: "superadmin@example.com" },
+  // 1. Manager User: Nadib Rana
+  const managerUser = await prisma.user.upsert({
+    where: { email: "nadib@messmate.com" },
     update: {},
     create: {
-      email: "superadmin@example.com",
-      username: "superadmin",
+      email: "nadib@messmate.com",
+      username: "nadibrana",
       password: defaultPassword,
-      firstName: "Super",
-      lastName: "Admin",
-      role: Role.SUPER_ADMIN,
-      status: UserStatus.ACTIVE,
-      isEmailVerified: true,
-    },
-  });
-  console.log(`✅ Super Admin created: ${superAdmin.email}`);
-
-  // 2. Seed Admin
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@example.com" },
-    update: {},
-    create: {
-      email: "admin@example.com",
-      username: "admin",
-      password: defaultPassword,
-      firstName: "System",
-      lastName: "Admin",
+      firstName: "Nadib",
+      lastName: "Rana",
+      phoneNumber: "01711-000001",
       role: Role.ADMIN,
       status: UserStatus.ACTIVE,
       isEmailVerified: true,
     },
   });
-  console.log(`✅ Admin created: ${admin.email}`);
+  console.log(`✅ Manager User created: ${managerUser.firstName} ${managerUser.lastName}`);
 
-  // 3. Seed Demo User
-  const demoUser = await prisma.user.upsert({
-    where: { email: "user@example.com" },
+  // 2. Members (6)
+  const memberList = [
+    { name: "Sumon", email: "sumon@messmate.com", phone: "01711-000002", plan: "Full" },
+    { name: "Monna", email: "monna@messmate.com", phone: "01711-000003", plan: "Lunch + Dinner" },
+    { name: "Foysan", email: "foysan@messmate.com", phone: "01711-000004", plan: "Full" },
+    { name: "Azijul", email: "azijul@messmate.com", phone: "01711-000005", plan: "Full" },
+    { name: "Shohan", email: "shohan@messmate.com", phone: "01711-000006", plan: "Lunch + Dinner" },
+    { name: "Showhan", email: "showhan@messmate.com", phone: "01711-000007", plan: "Full" },
+  ];
+
+  const createdMemberUsers = [];
+  for (const m of memberList) {
+    const user = await prisma.user.upsert({
+      where: { email: m.email },
+      update: {},
+      create: {
+        email: m.email,
+        username: m.name.toLowerCase(),
+        password: defaultPassword,
+        firstName: m.name,
+        lastName: "",
+        phoneNumber: m.phone,
+        role: Role.USER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+    });
+    createdMemberUsers.push({ user, plan: m.plan });
+    console.log(`✅ Member User created: ${user.firstName}`);
+  }
+
+  // 3. Create House for Nadib Rana (7 members total)
+  const house = await prisma.house.upsert({
+    where: { inviteCode: "HM-7777" },
     update: {},
     create: {
-      email: "user@example.com",
-      username: "demouser",
-      password: userPassword,
-      firstName: "Demo",
-      lastName: "User",
-      role: Role.USER,
-      status: UserStatus.ACTIVE,
-      isEmailVerified: true,
+      name: "Bashundhara Mess",
+      address: "Block B, Bashundhara R/A, Dhaka",
+      description: "7-Member Bachelor Mess Managed by Nadib Rana",
+      inviteCode: "HM-7777",
+      settings: {
+        create: {
+          breakfastWeight: 0.5,
+          lunchWeight: 1.0,
+          dinnerWeight: 1.0,
+          lowWalletThreshold: 500,
+          guestMealRule: "Host Pays",
+          fineAllocation: "House fund",
+          dutyDurationDays: 3,
+        },
+      },
+      members: {
+        create: [
+          { userId: managerUser.id, role: "MANAGER", status: "ACTIVE", mealPlan: "Full" },
+          ...createdMemberUsers.map(u => ({
+            userId: u.user.id,
+            role: "MEMBER" as const,
+            status: "ACTIVE" as const,
+            mealPlan: u.plan,
+          })),
+        ],
+      },
     },
   });
-  console.log(`✅ Demo User created: ${demoUser.email}`);
+  console.log(`✅ House created with 7 members! Invite Code: ${house.inviteCode}`);
 
-  // 4. Seed Sample Post
-  const samplePost = await prisma.post.upsert({
-    where: { slug: "welcome-to-nest-starter-template" },
-    update: {},
-    create: {
-      slug: "welcome-to-nest-starter-template",
-      title: "Welcome to Nest Starter Template",
-      summary: "A production-ready NestJS starter template with Prisma, PostgreSQL, JWT Auth, and Docker.",
-      content:
-        "# Welcome to Nest Starter Template\n\nThis template provides a modular architecture with authentication, RBAC, MinIO storage, email templates, and automated tests.",
-      published: true,
-      tags: ["nestjs", "prisma", "typescript", "starter-template"],
-      authorId: superAdmin.id,
-    },
-  });
-  console.log(`✅ Sample Post created: ${samplePost.title}`);
-
-  console.log("🚀 Database seeding completed successfully!");
+  console.log("🚀 MessMate Database seeding completed successfully!");
 }
 
 main()

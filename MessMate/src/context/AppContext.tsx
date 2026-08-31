@@ -93,13 +93,23 @@ const DEFAULT_HOUSE: House = {
   },
 };
 
+const INITIAL_MEMBERS: Member[] = [
+  { id: "m1", houseId: "h1", name: "Nadib Rana", phone: "01711-000001", email: "nadib@messmate.com", role: "manager", avatar: "NR", status: "active", mealPlan: "Full" },
+  { id: "m2", houseId: "h1", name: "Sumon", phone: "01711-000002", email: "sumon@messmate.com", role: "member", avatar: "SM", status: "active", mealPlan: "Full" },
+  { id: "m3", houseId: "h1", name: "Monna", phone: "01711-000003", email: "monna@messmate.com", role: "member", avatar: "MN", status: "active", mealPlan: "Lunch + Dinner" },
+  { id: "m4", houseId: "h1", name: "Foysan", phone: "01711-000004", email: "foysan@messmate.com", role: "member", avatar: "FY", status: "active", mealPlan: "Full" },
+  { id: "m5", houseId: "h1", name: "Azijul", phone: "01711-000005", email: "azijul@messmate.com", role: "member", avatar: "AZ", status: "active", mealPlan: "Full" },
+  { id: "m6", houseId: "h1", name: "Shohan", phone: "01711-000006", email: "shohan@messmate.com", role: "member", avatar: "SH", status: "active", mealPlan: "Lunch + Dinner" },
+  { id: "m7", houseId: "h1", name: "Showhan", phone: "01711-000007", email: "showhan@messmate.com", role: "member", avatar: "SW", status: "active", mealPlan: "Full" },
+];
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [houses, setHouses] = useState<House[]>([DEFAULT_HOUSE]);
   const [currentHouseId, setCurrentHouseId] = useState<string>("h1");
 
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
   const [dailyMeals, setDailyMeals] = useState<DailyMealRecord[]>([]);
   const [mealRequests, setMealRequests] = useState<MealStopRequest[]>([]);
   const [guestMeals, setGuestMeals] = useState<GuestMeal[]>([]);
