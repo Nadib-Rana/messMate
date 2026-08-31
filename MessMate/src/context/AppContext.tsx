@@ -107,10 +107,72 @@ const INITIAL_DAILY_MEALS: DailyMealRecord[] = [
 ];
 
 const INITIAL_MARKET_EXPENSES: MarketExpense[] = [
-  { id: "e1", houseId: "h1", memberId: "m2", memberName: "Rakib Ahmed", date: "Aug 31", amount: 2500, category: "Bazar", description: "Weekly groceries", status: "pending" },
-  { id: "e2", houseId: "h1", memberId: "m2", memberName: "Rakib Ahmed", date: "Aug 30", amount: 1800, category: "Bazar", description: "Rice and lentils", status: "approved" },
-  { id: "e3", houseId: "h1", memberId: "m3", memberName: "Hasan Mahmud", date: "Aug 27", amount: 3200, category: "Bazar", description: "Monthly vegetables", status: "approved" },
-  { id: "e4", houseId: "h1", memberId: "m1", memberName: "Nadib Hasan", date: "Aug 25", amount: 900, category: "Bazar", description: "Spices and condiments", status: "approved" },
+  {
+    id: "e1",
+    houseId: "h1",
+    memberId: "m2",
+    memberName: "Rakib Ahmed",
+    date: "Aug 31",
+    amount: 2500,
+    category: "Bazar",
+    description: "Weekly groceries",
+    items: [
+      { name: "Miniket Rice", quantity: "10 kg", price: 700 },
+      { name: "Chicken (Broiler)", quantity: "2 kg", price: 500 },
+      { name: "Fish (Rui)", quantity: "1.5 kg", price: 700 },
+      { name: "Potato & Onion", quantity: "5 kg", price: 300 },
+      { name: "Egg", quantity: "2 dozen", price: 300 },
+    ],
+    status: "pending",
+  },
+  {
+    id: "e2",
+    houseId: "h1",
+    memberId: "m2",
+    memberName: "Rakib Ahmed",
+    date: "Aug 30",
+    amount: 1800,
+    category: "Bazar",
+    description: "Rice and lentils",
+    items: [
+      { name: "Nazirshail Rice", quantity: "25 kg", price: 1500 },
+      { name: "Masoor Dal", quantity: "2 kg", price: 300 },
+    ],
+    status: "approved",
+  },
+  {
+    id: "e3",
+    houseId: "h1",
+    memberId: "m3",
+    memberName: "Hasan Mahmud",
+    date: "Aug 27",
+    amount: 3200,
+    category: "Bazar",
+    description: "Monthly meat & vegetables",
+    items: [
+      { name: "Beef", quantity: "2 kg", price: 1500 },
+      { name: "Soyabean Oil", quantity: "5 L", price: 900 },
+      { name: "Green Vegetables", quantity: "Mixed", price: 500 },
+      { name: "Spices Pack", quantity: "1 kg", price: 300 },
+    ],
+    status: "approved",
+  },
+  {
+    id: "e4",
+    houseId: "h1",
+    memberId: "m1",
+    memberName: "Nadib Hasan",
+    date: "Aug 25",
+    amount: 900,
+    category: "Bazar",
+    description: "Spices and condiments",
+    items: [
+      { name: "Garlic & Ginger", quantity: "1 kg", price: 300 },
+      { name: "Chili & Turmeric", quantity: "500 g", price: 400 },
+      { name: "Salt & Sugar", quantity: "3 kg", price: 200 },
+    ],
+    status: "approved",
+  },
 ];
 
 const INITIAL_EXPENSES: HouseExpense[] = [
@@ -289,7 +351,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMarketDuties(prev => [...prev, newDuty]);
   };
 
-  const submitMarketExpense = (exp: { date: string; amount: number; category: string; description: string; paidByMemberId: string }) => {
+  const submitMarketExpense = (exp: { date: string; amount: number; category: string; description: string; paidByMemberId: string; items?: MarketItem[] }) => {
     const member = members.find(m => m.id === exp.paidByMemberId) || members[0];
     const newExp: MarketExpense = {
       id: "e" + (marketExpenses.length + 1),
@@ -300,6 +362,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       amount: exp.amount,
       category: exp.category,
       description: exp.description,
+      items: exp.items,
       status: "pending",
     };
     setMarketExpenses(prev => [newExp, ...prev]);

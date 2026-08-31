@@ -103,6 +103,12 @@ export interface MarketDuty {
   notes?: string;
 }
 
+export interface MarketItem {
+  name: string;
+  quantity?: string;
+  price: number;
+}
+
 export interface MarketExpense {
   id: string;
   houseId: string;
@@ -112,6 +118,7 @@ export interface MarketExpense {
   amount: number;
   category: string;
   description: string;
+  items?: MarketItem[];
   status: RequestStatus;
 }
 

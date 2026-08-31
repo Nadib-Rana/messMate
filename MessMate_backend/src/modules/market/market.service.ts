@@ -41,7 +41,7 @@ export class MarketService {
     });
   }
 
-  async submitMarketExpense(data: { houseId: string; memberId: string; date: string; amount: number; category: string; description: string }) {
+  async submitMarketExpense(data: { houseId: string; memberId: string; date: string; amount: number; category: string; description: string; items?: any }) {
     return this.prisma.marketExpense.create({
       data: {
         houseId: data.houseId,
@@ -50,6 +50,7 @@ export class MarketService {
         amount: data.amount,
         category: data.category,
         description: data.description,
+        items: data.items ? data.items : undefined,
         status: "PENDING",
       },
     });

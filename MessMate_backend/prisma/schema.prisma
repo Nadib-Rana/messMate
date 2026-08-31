@@ -301,6 +301,7 @@ model MarketExpense {
   amount        Decimal       @db.Decimal(10, 2)
   category      String
   description   String
+  items         Json?
   receiptUrl    String?       @map("receipt_url")
   status        RequestStatus @default(PENDING)
 
