@@ -6,7 +6,7 @@ export class MealsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDailyMeals(houseId: string, date?: string) {
-    return this.prisma.dailyMealRecord.findMany({
+    const records = await this.prisma.dailyMealRecord.findMany({
       where: {
         houseId,
         ...(date ? { date: new Date(date) } : {}),
@@ -20,6 +20,19 @@ export class MealsService {
       },
       orderBy: { date: "desc" },
     });
+
+    return records.map(r => ({
+      id: r.id,
+      houseId: r.houseId,
+      memberId: r.memberId,
+      memberName: r.member.user ? `${r.member.user.firstName || ''} ${r.member.user.lastName || ''}`.trim() : 'Member',
+      date: r.date.toISOString().split("T")[0],
+      breakfast: r.breakfast,
+      lunch: r.lunch,
+      dinner: r.dinner,
+      weightedCount: Number(r.weightedCount),
+      isOverride: r.isOverride,
+    }));
   }
 
   async toggleMeal(data: { houseId: string; memberId: string; date: string; breakfast?: boolean; lunch?: boolean; dinner?: boolean }) {
@@ -56,7 +69,7 @@ export class MealsService {
   }
 
   async getMealStopRequests(houseId: string) {
-    return this.prisma.mealStopRequest.findMany({
+    const requests = await this.prisma.mealStopRequest.findMany({
       where: { houseId },
       include: {
         member: {
@@ -64,6 +77,23 @@ export class MealsService {
         },
       },
       orderBy: { createdAt: "desc" },
+    });
+
+    return requests.map(r => {
+      const memberName = r.member.user ? `${r.member.user.firstName || ''} ${r.member.user.lastName || ''}`.trim() : 'Member';
+      const avatar = memberName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+      return {
+        id: r.id,
+        houseId: r.houseId,
+        memberId: r.memberId,
+        memberName,
+        avatar,
+        startDate: r.startDate.toISOString().split("T")[0],
+        endDate: r.endDate.toISOString().split("T")[0],
+        reason: r.reason,
+        status: r.status.toLowerCase(),
+        submittedAt: r.createdAt.toISOString().split("T")[0],
+      };
     });
   }
 
@@ -88,7 +118,7 @@ export class MealsService {
   }
 
   async getGuestMeals(houseId: string) {
-    return this.prisma.guestMeal.findMany({
+    const guests = await this.prisma.guestMeal.findMany({
       where: { houseId },
       include: {
         hostMember: {
@@ -96,6 +126,20 @@ export class MealsService {
         },
       },
     });
+
+    return guests.map(g => ({
+      id: g.id,
+      houseId: g.houseId,
+      guestName: g.guestName,
+      hostId: g.hostMemberId,
+      hostName: g.hostMember.user ? `${g.hostMember.user.firstName || ''} ${g.hostMember.user.lastName || ''}`.trim() : 'Host',
+      startDate: g.startDate.toISOString().split("T")[0],
+      endDate: g.endDate.toISOString().split("T")[0],
+      meals: { breakfast: g.breakfast, lunch: g.lunch, dinner: g.dinner },
+      totalMeals: Number(g.totalMeals),
+      cost: Number(g.cost),
+      status: g.status.toLowerCase(),
+    }));
   }
 
   async addGuestMeal(data: { houseId: string; hostMemberId: string; guestName: string; startDate: string; endDate: string; meals: { breakfast: boolean; lunch: boolean; dinner: boolean } }) {
