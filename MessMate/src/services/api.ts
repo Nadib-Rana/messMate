@@ -1,6 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const method = options?.method || "GET";
   const token = localStorage.getItem("messmate_jwt_token");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -11,6 +12,8 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  console.log(`🚀 [API ${method}] ${API_BASE_URL}${endpoint}`);
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
@@ -18,10 +21,13 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error(`❌ [API ${method} Error ${response.status}] ${endpoint}:`, errorData);
     throw new Error(errorData.message || `API Error: ${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`✅ [API ${method} ${response.status}] ${endpoint} Success:`, data);
+  return data;
 }
 
 export const api = {
