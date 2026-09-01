@@ -12,9 +12,11 @@ export class MealsRequestsService {
   }
 
   async resolveMemberId(memberId: string, houseId: string): Promise<string | null> {
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) return memberId;
-    const indexMatch = memberId.match(/^m(\d+)$/i);
-    const members = await this.prisma.houseMember.findMany({ where: { houseId }, orderBy: { joinedAt: "asc" } });
+    if (memberId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) return memberId;
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return null;
+    const indexMatch = memberId ? memberId.match(/^m(\d+)$/i) : null;
+    const members = await this.prisma.houseMember.findMany({ where: { houseId: targetHouseId }, orderBy: { joinedAt: "asc" } });
     if (indexMatch && members.length > 0) {
       const idx = parseInt(indexMatch[1], 10) - 1;
       if (members[idx]) return members[idx].id;

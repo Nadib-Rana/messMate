@@ -66,5 +66,6 @@ export interface NotificationItem {
   type: "duty" | "bill" | "payment" | "meal" | "announcement" | "fine";
   priority: NotificationPriority;
   createdAt: string;
+  time?: string;
   read: boolean;
 }

@@ -29,9 +29,10 @@ interface Props {
   onRoleChange?: (r: UserRole) => void;
   currentPage: Page;
   onNavigate: (p: Page) => void;
+  onOpenProfile?: () => void;
 }
 
-export default function Header({ onMenuClick, role, onRoleChange, currentPage, onNavigate }: Props) {
+export default function Header({ onMenuClick, role, onRoleChange, currentPage, onNavigate, onOpenProfile }: Props) {
   const { currentHouse, houses, switchHouse, notifications, currentMember } = useApp();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -89,15 +90,20 @@ export default function Header({ onMenuClick, role, onRoleChange, currentPage, o
         )}
       </button>
 
-      <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-        <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+      <button
+        type="button"
+        onClick={onOpenProfile}
+        className="flex items-center gap-2 pl-2 border-l border-slate-200 hover:bg-slate-50 py-1 px-1.5 rounded-lg transition-colors group cursor-pointer"
+        title="Edit Profile"
+      >
+        <div className="w-8 h-8 bg-indigo-600 group-hover:bg-indigo-700 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm transition-colors">
           {currentMember?.avatar || currentMember?.name?.slice(0, 2).toUpperCase() || "MM"}
         </div>
         <div className="hidden sm:block text-left leading-tight">
-          <p className="text-xs font-bold text-slate-800">{currentMember?.name || "Member"}</p>
+          <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{currentMember?.name || "Member"}</p>
           <p className="text-[10px] text-slate-400 capitalize">{role}</p>
         </div>
-      </div>
+      </button>
     </header>
   );
 }

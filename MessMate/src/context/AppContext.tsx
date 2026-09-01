@@ -80,6 +80,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHouses(prev => prev.map(h => h.id === currentHouseId ? { ...h, setting: { ...h.setting, ...setting } } : h));
   };
 
+  const updateUserProfile = async (data: { firstName?: string; lastName?: string; phoneNumber?: string; avatarUrl?: string }) => {
+    try {
+      const updated = await api.updateProfile(data);
+      const newUserData = { ...currentUser, ...data, ...(updated || {}) };
+      setCurrentUser(newUserData);
+    } catch (err) {
+      const newUserData = { ...currentUser, ...data };
+      setCurrentUser(newUserData);
+      throw err;
+    }
+  };
+
+  const changePassword = async (data: { currentPassword: string; newPassword: string }) => {
+    await api.changePassword(data);
+  };
+
   const mealHandlers = useMealHandlers(currentHouseId, currentMember, dailyMeals, setDailyMeals, weeklySchedules, setWeeklySchedules, mealRequests, setMealRequests, guestMeals, setGuestMeals, members, mealRate);
   const financeHandlers = useFinanceHandlers(currentHouseId, members, marketDuties, setMarketDuties, marketExpenses, setMarketExpenses, expenses, setExpenses, walletPayments, setWalletPayments, fines, setFines, notifications, setNotifications);
 
@@ -93,7 +109,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser, setCurrentUser, currentMember, houses, currentHouse, switchHouse, members, addMember, updateMember,
         dailyMeals, ...mealHandlers, weeklySchedules, mealRequests, guestMeals, marketDuties, marketExpenses,
         expenses, bills: expenses, walletPayments, fines, notifications,
-        updateSettings, totalFoodExpense, totalWeightedMeals, mealRate, memberSettlements, monthlyClosing,
+        updateSettings, updateUserProfile, changePassword, totalFoodExpense, totalWeightedMeals, mealRate, memberSettlements, monthlyClosing,
         generateSettlement, closeMonth, reopenMonth, ...financeHandlers,
       }}
     >

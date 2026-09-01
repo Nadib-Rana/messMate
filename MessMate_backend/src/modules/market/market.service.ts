@@ -12,9 +12,11 @@ export class MarketService {
   }
 
   private async resolveMemberId(memberId: string, houseId: string): Promise<string | null> {
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) return memberId;
-    const members = await this.prisma.houseMember.findMany({ where: { houseId }, orderBy: { joinedAt: "asc" } });
-    const idx = parseInt(memberId.replace(/\D/g, "") || "1", 10) - 1;
+    if (memberId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) return memberId;
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return null;
+    const members = await this.prisma.houseMember.findMany({ where: { houseId: targetHouseId }, orderBy: { joinedAt: "asc" } });
+    const idx = parseInt((memberId || "").replace(/\D/g, "") || "1", 10) - 1;
     return members[idx]?.id || members[0]?.id || null;
   }
 

@@ -1,4 +1,4 @@
-import { Users, Utensils, TrendingUp, ShoppingBasket, Check } from "lucide-react";
+import { Users, Utensils, TrendingUp, ShoppingBasket, Check, Wallet, DollarSign } from "lucide-react";
 import { StatCard, Card, Badge, fmt, Btn } from "../components/ui";
 import { useApp } from "../context/AppContext";
 import { DashboardDutyAndAlerts } from "./components/DashboardDutyAndAlerts";
@@ -32,12 +32,21 @@ export default function Dashboard() {
   const totalOtherBills = expenses.reduce((a, b) => a + b.amount, 0);
   const totalExpense = totalFoodExpense + totalOtherBills;
 
+  // Calculate Total Money Deposited/Collected from all members (approved wallet payments)
+  const totalCollected = walletPayments
+    .filter(p => p.status === "approved")
+    .reduce((a, b) => a + b.amount, 0);
+  
+  // Calculate Net Remaining Cash in Hand / Mess Balance
+  const netMessCash = totalCollected - totalExpense;
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard label="Members" value={members.length.toString()} icon={<Users size={18} />} color="indigo" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        <StatCard label="Members" value={members.length.toString()} sub="7 Active" icon={<Users size={18} />} color="indigo" />
         <StatCard label="Total Meals" value={totalWeightedMeals.toLocaleString()} icon={<Utensils size={18} />} color="violet" />
         <StatCard label="Meal Rate" value={`৳${mealRate}`} sub="per meal · estimated" icon={<TrendingUp size={18} />} color="emerald" />
+        <StatCard label="Total Deposited" value={fmt(totalCollected)} sub="Collected from members" icon={<Wallet size={18} />} color="indigo" />
         <StatCard label="Food Expense" value={fmt(totalFoodExpense)} icon={<ShoppingBasket size={18} />} color="amber" />
         <StatCard label="Other Bills" value={fmt(totalOtherBills)} icon={<ShoppingBasket size={18} />} color="rose" />
         <StatCard label="Total Expense" value={fmt(totalExpense)} icon={<TrendingUp size={18} />} color="cyan" />
@@ -63,23 +72,55 @@ export default function Dashboard() {
       <div className="grid lg:grid-cols-3 gap-4">
         <Card className="p-5 lg:col-span-1">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-700">Current Month</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Current Month Financials</h3>
             <Badge variant="info">Live</Badge>
           </div>
           <div className="space-y-3">
-            <div className="p-3 bg-indigo-50 rounded-xl">
-              <p className="text-xs text-indigo-600 font-medium">Current Meal Rate</p>
-              <p className="text-3xl font-bold text-indigo-700 mt-0.5" style={{ fontFamily: "var(--font-display)" }}>৳{mealRate}</p>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-xl flex justify-between items-center">
+            <div className="p-3 bg-indigo-50 rounded-xl flex justify-between items-center">
               <div>
-                <p className="text-xs text-emerald-600 font-medium">Total Food Expense</p>
-                <p className="text-lg font-bold text-emerald-800">{fmt(totalFoodExpense)}</p>
+                <p className="text-xs text-indigo-600 font-medium">Current Meal Rate</p>
+                <p className="text-2xl font-bold text-indigo-700 mt-0.5" style={{ fontFamily: "var(--font-display)" }}>৳{mealRate}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-emerald-600 font-medium">Total Meals</p>
-                <p className="text-lg font-bold text-emerald-800">{totalWeightedMeals}</p>
+                <p className="text-xs text-indigo-600 font-medium">Total Meals</p>
+                <p className="text-xl font-bold text-indigo-800">{totalWeightedMeals}</p>
               </div>
+            </div>
+
+            <div className="p-3 bg-emerald-50 rounded-xl flex justify-between items-center">
+              <div>
+                <p className="text-xs text-emerald-700 font-medium">Total Money Collected</p>
+                <p className="text-lg font-bold text-emerald-900">{fmt(totalCollected)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-emerald-700 font-medium">From Members</p>
+                <p className="text-sm font-bold text-emerald-800">{members.length} Members</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl flex justify-between items-center">
+              <div>
+                <p className="text-xs text-amber-700 font-medium">Total Spent (Food + Bills)</p>
+                <p className="text-lg font-bold text-amber-900">{fmt(totalExpense)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-amber-700 font-medium">Food: {fmt(totalFoodExpense)}</p>
+                <p className="text-xs text-amber-700">Bills: {fmt(totalOtherBills)}</p>
+              </div>
+            </div>
+
+            <div className={`p-3 rounded-xl flex justify-between items-center ${netMessCash >= 0 ? "bg-cyan-50 border border-cyan-200" : "bg-rose-50 border border-rose-200"}`}>
+              <div>
+                <p className={`text-xs font-medium ${netMessCash >= 0 ? "text-cyan-700" : "text-rose-700"}`}>
+                  Remaining Cash in Hand
+                </p>
+                <p className={`text-xl font-bold mt-0.5 ${netMessCash >= 0 ? "text-cyan-900" : "text-rose-900"}`} style={{ fontFamily: "var(--font-display)" }}>
+                  {fmt(netMessCash)}
+                </p>
+              </div>
+              <Badge variant={netMessCash >= 0 ? "success" : "danger"}>
+                {netMessCash >= 0 ? "Surplus" : "Deficit"}
+              </Badge>
             </div>
           </div>
         </Card>

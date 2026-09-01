@@ -22,11 +22,19 @@ export interface MarketExpense {
 export interface HouseExpense {
   id: string;
   houseId: string;
-  title: string;
+  title?: string;
   amount: number;
-  category: "Rent" | "Electricity" | "Gas" | "Internet" | "Water" | "Cook Salary" | "Waste" | "Other";
-  date: string;
+  category: string;
+  date?: string;
+  month?: string;
+  dueDate?: string;
+  paidBy?: string;
+  paidByMemberId?: string;
+  description?: string;
   status: "paid" | "unpaid" | "pending";
+  units?: number;
+  prevReading?: number;
+  currReading?: number;
 }
 
 export interface WalletPayment {
@@ -51,7 +59,7 @@ export interface Fine {
   amount: number;
   reason: string;
   date: string;
-  status: "paid" | "unpaid";
+  status: "paid" | "unpaid" | "applied" | "cancelled";
   allocation: "House fund" | "Shared equally";
 }
 
@@ -67,7 +75,7 @@ export interface MemberSettlement {
   totalResponsibility: number;
   paid: number;
   balance: number;
-  status: "pay" | "receive";
+  status: "pay" | "receive" | "settled";
 }
 
 export interface MonthlyClosingRecord {

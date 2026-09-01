@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Input, Select, Btn } from "../../../components/ui";
-import { MarketItem } from "../../types";
+import { MarketItem } from "../../../types";
 import { Plus, Trash2 } from "lucide-react";
 
 export function AddMarketExpenseModal({

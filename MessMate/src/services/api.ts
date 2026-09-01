@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const method = options?.method || "GET";
@@ -35,7 +35,9 @@ export const api = {
   // Auth & User
   login: (data: any) => request<any>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
   register: (data: any) => request<any>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
-  getProfile: () => request<any>("/users/me"),
+  getProfile: () => request<any>("/auth/me"),
+  updateProfile: (data: { firstName?: string; lastName?: string; phoneNumber?: string; avatarUrl?: string }) => request<any>("/users/profile", { method: "PATCH", body: JSON.stringify(data) }),
+  changePassword: (data: { currentPassword: string; newPassword: string }) => request<any>("/auth/change-password", { method: "POST", body: JSON.stringify(data) }),
 
   // Houses
   getHouses: () => request<any[]>("/houses/my-houses"),

@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Utensils, ShoppingBasket, Wallet, Bell, Settings,
-  FileBarChart2, Users, X, LogOut, Calendar, Receipt, Gavel, FileText, Gift
+  FileBarChart2, Users, X, LogOut, Calendar, Receipt, Gavel, FileText, Gift, User
 } from "lucide-react";
 import { useState } from "react";
 import { UserRole } from "../types";
@@ -55,9 +55,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onLogout: () => void;
+  onOpenProfile?: () => void;
 }
 
-export default function Sidebar({ currentPage, onNavigate, role, open, onClose, onLogout }: Props) {
+export default function Sidebar({ currentPage, onNavigate, role, open, onClose, onLogout, onOpenProfile }: Props) {
   const { currentHouse, notifications } = useApp();
   const [expanded, setExpanded] = useState<string[]>(["meals", "market", "finance"]);
 
@@ -90,7 +91,15 @@ export default function Sidebar({ currentPage, onNavigate, role, open, onClose, 
         unreadCount={unreadCount}
       />
 
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-white/10 space-y-1">
+        {onOpenProfile && (
+          <button
+            onClick={() => { onOpenProfile(); onClose(); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <User size={16} /> My Profile
+          </button>
+        )}
         <button onClick={onLogout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
           <LogOut size={16} /> Sign Out
         </button>

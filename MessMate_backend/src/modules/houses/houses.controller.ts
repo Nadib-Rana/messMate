@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { HousesService } from "./houses.service";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 
 @ApiTags("Houses")
 @Controller("houses")
@@ -15,9 +16,8 @@ export class HousesController {
 
   @Get("my-houses")
   @ApiOperation({ summary: "Get user messes" })
-  async getMyHouses() {
-    // Demo user ID fallback for open API testing
-    return this.housesService.findMyHouses("demo-user-id");
+  async getMyHouses(@CurrentUser("id") userId?: string) {
+    return this.housesService.findMyHouses(userId);
   }
 
   @Get(":houseId")

@@ -39,21 +39,33 @@ export class HousesService {
   }
 
   async findMyHouses(userId?: string) {
-    const isUuid = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    const isUuid = userId && typeof userId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
     const include = { settings: true, members: { include: { user: { select: { id: true, email: true, firstName: true, lastName: true, phoneNumber: true, avatarUrl: true } } } } };
-    let houses = isUuid ? await this.prisma.house.findMany({ where: { members: { some: { userId } } }, include }) : [];
-    if (houses.length === 0) houses = await this.prisma.house.findMany({ include });
+    let houses: any[] = [];
+    if (isUuid && userId) {
+      try {
+        houses = await this.prisma.house.findMany({ where: { members: { some: { userId } } }, include });
+      } catch {
+        houses = [];
+      }
+    }
+    if (houses.length === 0) {
+      houses = await this.prisma.house.findMany({ include });
+    }
     return houses.map(h => this.transformHouse(h));
   }
 
   async findHouseById(houseId: string) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(houseId);
     const house = await this.prisma.house.findFirst({
-      where: isUuid ? { id: houseId } : {},
+      where: isUuid ? { id: houseId } : { inviteCode: houseId },
       include: { settings: true, members: { include: { user: { select: { id: true, email: true, firstName: true, lastName: true, phoneNumber: true, avatarUrl: true } } } } },
     });
-    if (!house) throw new NotFoundException(`House not found`);
-    return this.transformHouse(house);
+    const finalHouse = house || (await this.prisma.house.findFirst({
+      include: { settings: true, members: { include: { user: { select: { id: true, email: true, firstName: true, lastName: true, phoneNumber: true, avatarUrl: true } } } } },
+    }));
+    if (!finalHouse) throw new NotFoundException(`House not found`);
+    return this.transformHouse(finalHouse);
   }
 
   async updateSettings(houseId: string, settingsDto: any) {

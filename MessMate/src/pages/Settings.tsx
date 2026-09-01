@@ -1,14 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader, Card, Btn, Input, Tabs } from "../components/ui";
 import { useApp } from "../context/AppContext";
 import { SettingsMealTab } from "./components/SettingsMealTab";
 import { SettingsDutyAndFines } from "./components/SettingsOtherTabs";
+import { User, KeyRound, CheckCircle2, AlertCircle, Phone, Mail, Shield } from "lucide-react";
 
-const TABS = ["House", "Meals", "Market Duty", "Fines", "Notifications"];
+const TABS = ["My Profile", "House", "Meals", "Market Duty", "Fines", "Notifications"];
 
 export default function Settings() {
-  const { currentHouse, updateSettings } = useApp();
-  const [activeTab, setActiveTab] = useState("House");
+  const { currentHouse, updateSettings, currentUser, updateUserProfile, changePassword } = useApp();
+  const [activeTab, setActiveTab] = useState("My Profile");
+
+  // Profile states
+  const [firstName, setFirstName] = useState(currentUser?.firstName || "");
+  const [lastName, setLastName] = useState(currentUser?.lastName || "");
+  const [phone, setPhone] = useState(currentUser?.phoneNumber || currentUser?.phone || "");
+  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || "");
+
+  // Password states
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileError, setProfileError] = useState("");
+
+  const [passLoading, setPassLoading] = useState(false);
+  const [passSuccess, setPassSuccess] = useState("");
+  const [passError, setPassError] = useState("");
+
+  useEffect(() => {
+    if (currentUser) {
+      setFirstName(currentUser.firstName || "");
+      setLastName(currentUser.lastName || "");
+      setPhone(currentUser.phoneNumber || currentUser.phone || "");
+      setAvatarUrl(currentUser.avatarUrl || "");
+    }
+  }, [currentUser]);
+
+  const handleSaveProfile = async () => {
+    setProfileError("");
+    setProfileSuccess("");
+    setProfileLoading(true);
+    try {
+      await updateUserProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phoneNumber: phone.trim(),
+        avatarUrl: avatarUrl.trim(),
+      });
+      setProfileSuccess("Profile updated successfully!");
+      setTimeout(() => setProfileSuccess(""), 3000);
+    } catch (err: any) {
+      setProfileError(err.message || "Failed to update profile.");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    setPassError("");
+    setPassSuccess("");
+    if (!currentPassword) {
+      setPassError("Please enter your current password.");
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      setPassError("New password must be at least 6 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPassError("Passwords do not match.");
+      return;
+    }
+    setPassLoading(true);
+    try {
+      await changePassword({ currentPassword, newPassword });
+      setPassSuccess("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPassSuccess(""), 3000);
+    } catch (err: any) {
+      setPassError(err.message || "Failed to update password.");
+    } finally {
+      setPassLoading(false);
+    }
+  };
 
   const [mealWeights, setMealWeights] = useState({
     breakfast: currentHouse.setting.mealWeights.breakfast.toString(),
@@ -53,7 +132,7 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title="House Settings" subtitle={`Configure rules and preferences for ${currentHouse.name}`} />
+      <PageHeader title="Settings" subtitle={`Manage your personal profile and house preferences for ${currentHouse.name}`} />
 
       {savedMsg && (
         <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold">
@@ -64,6 +143,85 @@ export default function Settings() {
       <div className="mb-6">
         <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
       </div>
+
+      {activeTab === "My Profile" && (
+        <div className="space-y-4 max-w-2xl">
+          {/* Profile Card */}
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <User size={16} className="text-indigo-600" /> Personal Information
+            </h3>
+
+            {profileError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2 font-medium">
+                <AlertCircle size={15} /> <span>{profileError}</span>
+              </div>
+            )}
+            {profileSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <CheckCircle2 size={15} /> <span>{profileSuccess}</span>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="First Name" value={firstName} onChange={setFirstName} />
+                <Input label="Last Name" value={lastName} onChange={setLastName} />
+              </div>
+              <Input label="Phone Number" value={phone} onChange={setPhone} placeholder="e.g. 01711-000001" />
+              <Input label="Avatar Image URL (Optional)" value={avatarUrl} onChange={setAvatarUrl} placeholder="https://example.com/avatar.jpg" />
+              
+              <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl text-xs space-y-1.5 text-slate-600">
+                <div className="flex items-center gap-2">
+                  <Mail size={13} className="text-slate-400" />
+                  <span>Email: <strong>{currentUser?.email || "N/A"}</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield size={13} className="text-slate-400" />
+                  <span>Role: <strong className="capitalize">{currentUser?.role || "Member"}</strong></span>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Btn onClick={handleSaveProfile} disabled={profileLoading}>
+                  {profileLoading ? "Saving..." : "Save Profile Details"}
+                </Btn>
+              </div>
+            </div>
+          </Card>
+
+          {/* Security Card */}
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <KeyRound size={16} className="text-indigo-600" /> Security & Password
+            </h3>
+
+            {passError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2 font-medium">
+                <AlertCircle size={15} /> <span>{passError}</span>
+              </div>
+            )}
+            {passSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <CheckCircle2 size={15} /> <span>{passSuccess}</span>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <Input label="Current Password" type="password" value={currentPassword} onChange={setCurrentPassword} placeholder="••••••••" />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="New Password" type="password" value={newPassword} onChange={setNewPassword} placeholder="Min 6 characters" />
+                <Input label="Confirm New Password" type="password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Repeat new password" />
+              </div>
+              <div className="flex justify-end">
+                <Btn onClick={handleSavePassword} disabled={passLoading}>
+                  {passLoading ? "Updating..." : "Update Password"}
+                </Btn>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {activeTab === "House" && (
         <div className="space-y-4 max-w-xl">

@@ -19,6 +19,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Sidebar, { Page } from "./components/Sidebar";
 import Header from "./components/Header";
+import { ProfileModal } from "./components/ProfileModal";
 import { UserRole } from "./types";
 import { useApp } from "./context/AppContext";
 
@@ -40,6 +41,7 @@ export default function App() {
   });
   const [page, setPage] = useState<Page>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogin = (user?: any) => {
     setLoggedIn(true);
@@ -100,6 +102,7 @@ export default function App() {
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onLogout={handleLogout}
+        onOpenProfile={() => setProfileOpen(true)}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden lg:pl-64">
         <Header
@@ -108,11 +111,17 @@ export default function App() {
           onRoleChange={setRole}
           currentPage={page}
           onNavigate={setPage}
+          onOpenProfile={() => setProfileOpen(true)}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           {renderPage()}
         </main>
       </div>
+
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
     </div>
   );
 }

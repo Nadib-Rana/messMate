@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import helmet from "helmet";
 import { json, urlencoded } from "express";
 import { setupSwagger } from "./swagger.setup";
+import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 
 async function bootstrap() {
   const logger = new Logger("Bootstrap");
@@ -21,8 +22,9 @@ async function bootstrap() {
   app.use(urlencoded({ extended: true, limit: "50mb" }));
 
   const corsOrigins = configService.get<string | string[]>("app.corsOrigins", "*");
+  const isWildcard = corsOrigins === "*" || (Array.isArray(corsOrigins) && corsOrigins.includes("*"));
   app.enableCors({
-    origin: corsOrigins === "*" ? true : corsOrigins,
+    origin: isWildcard ? true : corsOrigins,
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "x-request-id", "ngrok-skip-browser-warning"],
@@ -49,6 +51,7 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalInterceptors(new LoggingInterceptor());
   setupSwagger(app, configService, port);
   app.enableShutdownHooks();
 

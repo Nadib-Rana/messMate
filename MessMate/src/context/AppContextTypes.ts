@@ -73,6 +73,8 @@ export interface AppContextType {
   addAnnouncement: (title: string, message: string, priority?: "normal" | "warning" | "important") => void;
 
   updateSettings: (setting: Partial<House["setting"]>) => void;
+  updateUserProfile: (data: { firstName?: string; lastName?: string; phoneNumber?: string; avatarUrl?: string }) => Promise<void>;
+  changePassword: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
 
   totalFoodExpense: number;
   totalWeightedMeals: number;

@@ -29,7 +29,12 @@ export function useAppDataSync(
           const matchedHouse = myHouses.find((h: any) => h.id === currentHouseId) || myHouses[0];
           activeHouseId = matchedHouse.id;
           if (currentHouseId !== activeHouseId) setCurrentHouseId(activeHouseId);
-          if (matchedHouse.members?.length > 0) setMembers(matchedHouse.members);
+          if (matchedHouse.members && matchedHouse.members.length > 0) {
+            setMembers(matchedHouse.members);
+          }
+        }
+        if (!activeHouseId || activeHouseId.trim() === "") {
+          return;
         }
         const houseData = await api.getHouseDetails(activeHouseId).catch(() => null);
         if (houseData && isMounted) {

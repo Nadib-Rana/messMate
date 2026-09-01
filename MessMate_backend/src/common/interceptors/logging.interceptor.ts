@@ -16,11 +16,14 @@ export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
     const req = ctx.getRequest<Request>();
-    const { method, url, ip } = req;
+    const { method, url, ip, body, query } = req;
     const user = (req as any).user;
     const userIdentifier = user ? `${user.email || user.username || user.id}` : "Anonymous/Guest";
-    const userAgent = req.get("user-agent") || "";
     const now = Date.now();
+
+    const bodyKeys = body && typeof body === "object" ? Object.keys(body).filter(k => !k.toLowerCase().includes("password")) : [];
+    const queryKeys = query && typeof query === "object" ? Object.keys(query) : [];
+    const metaStr = bodyKeys.length > 0 ? ` | Payload: [${bodyKeys.join(", ")}]` : queryKeys.length > 0 ? ` | Query: ${JSON.stringify(query)}` : "";
 
     return next.handle().pipe(
       tap({
@@ -29,13 +32,13 @@ export class LoggingInterceptor implements NestInterceptor {
           const statusCode = res.statusCode;
           const duration = Date.now() - now;
           this.logger.log(
-            `🌐 [${method}] ${url} | Status: ${statusCode} | Time: ${duration}ms | Caller: ${userIdentifier} | IP: ${ip}`,
+            `📡 [${method}] ${url}${metaStr} ➔ Status: ${statusCode} (${duration}ms) | User: ${userIdentifier} [IP: ${ip}]`,
           );
         },
         error: (err) => {
           const duration = Date.now() - now;
           this.logger.error(
-            `❌ [${method}] ${url} | Error: ${err.status || 500} (${err.message}) | Time: ${duration}ms | Caller: ${userIdentifier}`,
+            `❌ [${method}] ${url}${metaStr} ➔ Error: ${err.status || 500} (${err.message}) (${duration}ms) | User: ${userIdentifier}`,
           );
         },
       }),
