@@ -92,7 +92,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentUser, setCurrentUser, currentMember, houses, currentHouse, switchHouse, members, addMember, updateMember,
         dailyMeals, ...mealHandlers, weeklySchedules, mealRequests, guestMeals, marketDuties, marketExpenses,
-        expenses, bills: expenses, addBill: financeHandlers.addExpense, walletPayments, fines, notifications,
+        expenses, bills: expenses, walletPayments, fines, notifications,
         updateSettings, totalFoodExpense, totalWeightedMeals, mealRate, memberSettlements, monthlyClosing,
         generateSettlement, closeMonth, reopenMonth, ...financeHandlers,
       }}
