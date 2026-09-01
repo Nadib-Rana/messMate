@@ -8,9 +8,11 @@ import { AutoRotationModal } from "./components/AutoRotationModal";
 import { DutyCardGrid } from "./components/DutyCardGrid";
 
 export default function MarketDuty() {
-  const { marketDuties, members, assignMarketDuty, deleteMarketDuty, clearMarketDuties, currentHouse, updateSettings } = useApp();
+  const { marketDuties, members, assignMarketDuty, deleteMarketDuty, clearMarketDuties, currentHouse, updateSettings, currentMember, currentUser } = useApp();
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showAutoRotationModal, setShowAutoRotationModal] = useState(false);
+
+  const isManager = currentMember?.role === "manager" || currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
 
   const [rotationStartDate, setRotationStartDate] = useState("2026-09-01");
   const [dutyDays, setDutyDays] = useState(currentHouse.setting.dutyDurationDays.toString() || "3");
@@ -22,7 +24,31 @@ export default function MarketDuty() {
   const selectAllMembers = () => setSelectedMemberIds(members.map(m => m.id));
   const deselectAllMembers = () => setSelectedMemberIds([]);
 
-  const participatingMembers = members.filter(m => selectedMemberIds.includes(m.id));
+  const moveMemberUp = (id: string) => {
+    setSelectedMemberIds(prev => {
+      const idx = prev.indexOf(id);
+      if (idx <= 0) return prev;
+      const updated = [...prev];
+      const temp = updated[idx - 1];
+      updated[idx - 1] = updated[idx];
+      updated[idx] = temp;
+      return updated;
+    });
+  };
+
+  const moveMemberDown = (id: string) => {
+    setSelectedMemberIds(prev => {
+      const idx = prev.indexOf(id);
+      if (idx < 0 || idx >= prev.length - 1) return prev;
+      const updated = [...prev];
+      const temp = updated[idx + 1];
+      updated[idx + 1] = updated[idx];
+      updated[idx] = temp;
+      return updated;
+    });
+  };
+
+  const participatingMembers = selectedMemberIds.map(id => members.find(m => m.id === id)).filter(Boolean) as typeof members;
   const effectiveStartMemberId = participatingMembers.some(m => m.id === startMemberId) ? startMemberId : (participatingMembers[0]?.id || "");
   const startIndex = participatingMembers.findIndex(m => m.id === effectiveStartMemberId);
   const orderedMembers = startIndex >= 0 ? [...participatingMembers.slice(startIndex), ...participatingMembers.slice(0, startIndex)] : participatingMembers;
@@ -55,8 +81,7 @@ export default function MarketDuty() {
     if (replaceExisting) clearMarketDuties();
     updateSettings({ dutyDurationDays: parseInt(dutyDays) || 3 });
     previewRotation.forEach(r => {
-      const dates = r.period.split(" – ");
-      assignMarketDuty({ memberId: r.member.id, startDate: dates[0], endDate: dates[1], notes: `Auto-assigned (${dutyDays}-day fair cycle)` });
+      assignMarketDuty({ memberId: r.member.id, startDate: r.startDate, endDate: r.endDate, notes: `Auto-assigned (${dutyDays}-day fair cycle)` });
     });
     setShowAutoRotationModal(false);
   };
@@ -67,15 +92,17 @@ export default function MarketDuty() {
         title="Market Duty Schedule"
         subtitle="Manage bazaar duties fairly with 1 turn per member"
         action={
-          <div className="flex gap-2">
-            {duplicateDutiesExist && <Btn size="sm" variant="danger" onClick={handleCleanDuplicates}>Clean Duplicates</Btn>}
-            <Btn size="sm" variant="secondary" onClick={() => setShowAutoRotationModal(true)}><RefreshCw size={14} /> Auto-Rotate</Btn>
-            <Btn size="sm" onClick={() => setShowAssignModal(true)}>+ Assign Duty</Btn>
-          </div>
+          isManager ? (
+            <div className="flex gap-2">
+              {duplicateDutiesExist && <Btn size="sm" variant="danger" onClick={handleCleanDuplicates}>Clean Duplicates</Btn>}
+              <Btn size="sm" variant="secondary" onClick={() => setShowAutoRotationModal(true)}><RefreshCw size={14} /> Auto-Rotate</Btn>
+              <Btn size="sm" onClick={() => setShowAssignModal(true)}>+ Assign Duty</Btn>
+            </div>
+          ) : undefined
         }
       />
 
-      <DutyCardGrid marketDuties={marketDuties} members={members} deleteMarketDuty={deleteMarketDuty} />
+      <DutyCardGrid marketDuties={marketDuties} members={members} deleteMarketDuty={deleteMarketDuty} isManager={isManager} />
 
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
@@ -83,7 +110,9 @@ export default function MarketDuty() {
             <h3 className="text-sm font-bold text-slate-900">Auto-Rotation Schedule Preview</h3>
             <p className="text-xs text-slate-500">Starting from {rotationStartDate} · {dutyDays} days per member</p>
           </div>
-          <Btn size="sm" variant="outline" onClick={() => setShowAutoRotationModal(true)}>Configure Settings</Btn>
+          {isManager && (
+            <Btn size="sm" variant="outline" onClick={() => setShowAutoRotationModal(true)}>Configure Settings</Btn>
+          )}
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {previewRotation.map((item, i) => (
@@ -103,7 +132,7 @@ export default function MarketDuty() {
         rotationStartDate={rotationStartDate} setRotationStartDate={setRotationStartDate} dutyDays={dutyDays} setDutyDays={setDutyDays}
         selectedMemberIds={selectedMemberIds} toggleMemberSelection={toggleMemberSelection} selectAllMembers={selectAllMembers}
         deselectAllMembers={deselectAllMembers} participatingMembers={participatingMembers} effectiveStartMemberId={effectiveStartMemberId}
-        setStartMemberId={setStartMemberId} replaceExisting={replaceExisting} setReplaceExisting={setReplaceExisting} onGenerate={handleGenerateRotation}
+        setStartMemberId={setStartMemberId} moveMemberUp={moveMemberUp} moveMemberDown={moveMemberDown} replaceExisting={replaceExisting} setReplaceExisting={setReplaceExisting} onGenerate={handleGenerateRotation}
       />
     </div>
   );

@@ -15,16 +15,19 @@ export function DutyCardGrid({
   marketDuties,
   members,
   deleteMarketDuty,
+  isManager = false,
 }: {
   marketDuties: any[];
   members: any[];
   deleteMarketDuty: (id: string) => void;
+  isManager?: boolean;
 }) {
   const todayStr = new Date().toISOString().split("T")[0];
+  const sortedDuties = [...marketDuties].sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""));
 
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      {marketDuties.map(d => {
+      {sortedDuties.map(d => {
         const isCurrent = (d.startDate && d.endDate && todayStr >= d.startDate && todayStr <= d.endDate) || d.status === "current";
         const isCompleted = d.endDate && todayStr > d.endDate;
         const effectiveStatus = isCurrent ? "current" : isCompleted ? "completed" : "upcoming";
@@ -56,13 +59,15 @@ export function DutyCardGrid({
               </div>
               <div className="flex items-center gap-1.5">
                 <Badge variant={cfg.variant}>{cfg.icon} {cfg.label}</Badge>
-                <button
-                  onClick={() => deleteMarketDuty(d.id)}
-                  title="Remove duty"
-                  className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Trash2 size={13} />
-                </button>
+                {isManager && (
+                  <button
+                    onClick={() => deleteMarketDuty(d.id)}
+                    title="Remove duty"
+                    className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
             </div>
             {d.notes && <p className="text-xs text-slate-500 mb-2 bg-slate-50 p-2 rounded-lg">{d.notes}</p>}

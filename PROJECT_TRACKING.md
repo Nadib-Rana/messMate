@@ -79,6 +79,36 @@ This document maintains a continuous record of features, architecture updates, b
   - **Total Food & Utility Expense** (মোট খরচ)
   - **Remaining Cash in Hand / Mess Balance** (অবশিষ্ট ব্যালেন্স/ক্যাশ, Surplus/Deficit badge).
 
+#### 10. Manager 1-Click Meal Rules & Emergency All Meals OFF (With Date Selector)
+- **Flexible 1-Click Meal Slot Toggling**: Enhanced [SettingsMealTab.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/components/SettingsMealTab.tsx) and [DailyMeals.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/DailyMeals.tsx) with individual 1-Click toggle controls for **Breakfast**, **Lunch**, AND **Dinner**.
+- **🚨 Emergency Day Off Modal (Date Picker & Presets)**: Built [EmergencyAllMealsOffModal.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/EmergencyAllMealsOffModal.tsx) allowing Managers to select **Today**, **Tomorrow**, or **any custom date** via a calendar date picker to turn OFF all meals for all members.
+
+#### 11. Market Duty Manager Exclusion & Custom Sequence Ordering
+- **Member & Manager Duty Exclusion**: Enhanced [AutoRotationModal.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/AutoRotationModal.tsx) and [MarketDuty.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketDuty.tsx) allowing Manager to exclude any member (including the Manager) from market shopping duties for the cycle (`Included / Excluded` toggle).
+- **Custom Duty Sequence Reordering**: Added **▲ / ▼ Move Up / Move Down** sequence reordering controls in `AutoRotationModal`, giving Manager full control to set the exact order of who does market duty 1st, 2nd, 3rd, 4th, etc., before generating the auto-rotation schedule.
+
+#### 12. PostgreSQL Data Persistence & Auto-Rotation Date Fix
+- **Auto-Rotation Date Parsing Fix**: Fixed date parsing bug in [dutyEngine.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/engine/dutyEngine.ts) and [MarketDuty.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketDuty.tsx).
+- **Chronological Duty Grid Sorting**: Fixed duty grid sequence ordering in [DutyCardGrid.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/DutyCardGrid.tsx) and [usePaymentDutyHandlers.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/context/usePaymentDutyHandlers.ts).
+
+#### 13. Market Expense Payment Source & Auto Wallet Reimbursement Credit
+- **Payment Source Selector**: Added **Payment Source (পেমেন্ট সোর্স / তহবিলের উৎস)** selector to [AddMarketExpenseModal.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/AddMarketExpenseModal.tsx) with two clear options (`💵 Mess Cash Fund` & `👛 Member's Personal Pocket`).
+- **Automatic Wallet Reimbursement Credit**: Updated [useFinanceHandlers.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/context/useFinanceHandlers.ts) and [financialEngine.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/engine/financialEngine.ts).
+
+#### 14. Market Expense Requester Name Fix & Prominent Dashboard Banner
+- **Backend & Frontend Name Sync**: Updated [market.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/market/market.service.ts) and [MarketExpenses.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketExpenses.tsx) to return and render both `paidByMemberName` and `memberName`.
+
+#### 15. Strict Manager Role Guards for Approvals (Security & Permission Fix)
+- **Market Expense Approval Guard**: Enforced strict `isManager` checks in [MarketExpenses.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketExpenses.tsx). Non-manager members will only see the `Pending` status badge; only active Managers/Admins can see and click `Approve` / `Reject` buttons.
+- **Dashboard & Wallet Approval Guards**: Updated [Dashboard.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/Dashboard.tsx) and [Wallets.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/finance/Wallets.tsx) to restrict quick approval banners and deposit management buttons exclusively to Managers.
+
+#### 16. Auto Pre-Select Logged-in User in "Purchased By" Field
+- **Auto-Selection Logic**: Updated [AddMarketExpenseModal.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/AddMarketExpenseModal.tsx) and [MarketExpenses.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketExpenses.tsx) so that when a user opens the **Submit Market Expense** modal, the **Purchased By** dropdown automatically pre-selects the logged-in member's own name (`currentMember.id`).
+
+#### 17. Restricted Market Duty Controls (Manager & Admin Only)
+- **Duty Action Buttons Guard**: Updated [MarketDuty.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketDuty.tsx). The **`Auto-Rotate`**, **`+ Assign Duty`**, **`Configure Settings`**, and **`Clean Duplicates`** buttons are now strictly hidden for regular members and only accessible to Manager / Admin accounts.
+- **Duty Deletion Guard**: Updated [DutyCardGrid.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/DutyCardGrid.tsx) so the duty card deletion icon (`Trash2`) is strictly hidden for regular members and restricted to Manager / Admin accounts.
+
 ---
 
 ## 🚦 Current Health & Status

@@ -17,8 +17,11 @@ export default function Dashboard() {
     memberSettlements,
     currentHouse,
     approvePayment,
+    currentMember,
+    currentUser,
   } = useApp();
 
+  const isManager = currentMember?.role === "manager" || currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
   const todayStr = new Date().toISOString().split("T")[0];
   const todayDuty = marketDuties.find(d => {
     if (d.startDate && d.endDate) {
@@ -52,19 +55,21 @@ export default function Dashboard() {
         <StatCard label="Total Expense" value={fmt(totalExpense)} icon={<TrendingUp size={18} />} color="cyan" />
       </div>
 
-      {pendingPayments.length > 0 && (
+      {isManager && pendingPayments.length > 0 && (
         <div className="p-4 bg-gradient-to-r from-indigo-50 via-amber-50 to-amber-100/50 border border-amber-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">৳</div>
             <div>
               <p className="text-sm font-bold text-slate-900">
-                {pendingPayments.length} Member Wallet Payment{pendingPayments.length > 1 ? "s" : ""} Waiting for Approval
+                {pendingPayments.length} Member Wallet Deposit{pendingPayments.length > 1 ? "s" : ""} Waiting for Approval
               </p>
-              <p className="text-xs text-slate-600">Review and approve deposit requests to credit member wallet balances.</p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Requester: <strong className="text-slate-900 font-bold">{pendingPayments[0].memberName}</strong> deposited <strong>{fmt(pendingPayments[0].amount)}</strong> via {pendingPayments[0].method}
+              </p>
             </div>
           </div>
           <Btn size="sm" onClick={() => approvePayment(pendingPayments[0].id)}>
-            <Check size={13} /> Quick Approve ({fmt(pendingPayments[0].amount)})
+            <Check size={13} /> Approve {pendingPayments[0].memberName}'s Deposit ({fmt(pendingPayments[0].amount)})
           </Btn>
         </div>
       )}

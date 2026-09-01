@@ -31,6 +31,7 @@ export interface AppContextType {
   dailyMeals: DailyMealRecord[];
   toggleDailyMeal: (memberId: string, meal: "breakfast" | "lunch" | "dinner", date?: string) => void;
   setMealExplicit: (memberId: string, date: string, breakfast: boolean, lunch: boolean, dinner: boolean) => void;
+  disableAllMealsForDate: (date?: string) => void;
 
   weeklySchedules: { memberId: string; dayOfWeek: string; breakfast: boolean; lunch: boolean; dinner: boolean }[];
   updateWeeklySchedule: (memberId: string, dayOfWeek: string, meal: "breakfast" | "lunch" | "dinner", value: boolean) => void;

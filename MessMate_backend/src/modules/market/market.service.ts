@@ -59,16 +59,22 @@ export class MarketService {
       include: { member: { include: { user: { select: { firstName: true, lastName: true, avatarUrl: true } } } } },
       orderBy: { date: "desc" },
     });
-    return expenses.map(e => ({
-      id: e.id, houseId: e.houseId, memberId: e.memberId,
-      memberName: e.member.user ? `${e.member.user.firstName || ""} ${e.member.user.lastName || ""}`.trim() : "Member",
-      date: e.date.toISOString().split("T")[0], amount: Number(e.amount), category: e.category, description: e.description, items: e.items, status: e.status.toLowerCase(),
-    }));
+    return expenses.map(e => {
+      const name = e.member?.user ? `${e.member.user.firstName || ""} ${e.member.user.lastName || ""}`.trim() : "Member";
+      return {
+        id: e.id, houseId: e.houseId, memberId: e.memberId,
+        memberName: name,
+        paidByMemberId: e.memberId,
+        paidByMemberName: name,
+        date: e.date.toISOString().split("T")[0], amount: Number(e.amount), category: e.category, description: e.description, items: e.items, status: e.status.toLowerCase(),
+      };
+    });
   }
 
-  async submitMarketExpense(data: { houseId: string; memberId: string; date: string; amount: number; category: string; description: string; items?: any }) {
+  async submitMarketExpense(data: { houseId: string; memberId?: string; paidByMemberId?: string; date: string; amount: number; category: string; description: string; items?: any }) {
+    const rawMemberId = data.memberId || data.paidByMemberId || "";
     const targetHouseId = (await this.resolveHouseId(data.houseId)) || data.houseId;
-    const targetMemberId = (await this.resolveMemberId(data.memberId, targetHouseId)) || data.memberId;
+    const targetMemberId = (await this.resolveMemberId(rawMemberId, targetHouseId)) || rawMemberId;
     return this.prisma.marketExpense.create({
       data: { houseId: targetHouseId, memberId: targetMemberId, date: new Date(data.date), amount: data.amount, category: data.category, description: data.description, items: data.items || undefined, status: "PENDING" },
     });

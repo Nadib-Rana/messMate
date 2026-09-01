@@ -29,10 +29,30 @@ export function useFinanceHandlers(
 ) {
   const pdHandlers = usePaymentDutyHandlers(currentHouseId, members, marketDuties, setMarketDuties, walletPayments, setWalletPayments);
 
-  const submitMarketExpense = (exp: { date: string; amount: number; category: string; description: string; paidByMemberId: string; items?: MarketItem[] }) => {
+  const submitMarketExpense = (exp: { date: string; amount: number; category: string; description: string; paidByMemberId: string; paymentSource?: "mess_cash" | "member_pocket"; items?: MarketItem[] }) => {
     const member = members.find(m => m.id === exp.paidByMemberId) || members[0] || { name: "Member" };
-    api.submitMarketExpense(currentHouseId, exp).catch(() => null);
-    setMarketExpenses(prev => [{ id: "e" + (marketExpenses.length + 1), houseId: currentHouseId, date: exp.date, amount: exp.amount, category: exp.category, description: exp.description, paidByMemberId: exp.paidByMemberId, paidByMemberName: member.name, status: "pending", items: exp.items || [] }, ...prev]);
+    const tempId = "e" + Date.now();
+
+    // If paid from personal pocket, automatically credit member's wallet balance
+    if (exp.paymentSource === "member_pocket") {
+      pdHandlers.addPayment({
+        memberId: exp.paidByMemberId,
+        amount: exp.amount,
+        date: exp.date,
+        method: "Cash",
+        reference: "Bazar Reimbursement",
+        note: `Personal Pocket Bazar (${exp.category}): ৳${exp.amount}`,
+      });
+    }
+
+    api.submitMarketExpense(currentHouseId, { ...exp, memberId: exp.paidByMemberId }).then((created: any) => {
+      const realId = created?.id || created?.data?.id;
+      if (realId) {
+        setMarketExpenses(prev => prev.map(e => e.id === tempId ? { ...e, id: realId } : e));
+      }
+    }).catch(() => null);
+
+    setMarketExpenses(prev => [{ id: tempId, houseId: currentHouseId, date: exp.date, amount: exp.amount, category: exp.category, description: exp.description, paidByMemberId: exp.paidByMemberId, paidByMemberName: member.name, paymentSource: exp.paymentSource || "mess_cash", status: "pending", items: exp.items || [] }, ...prev]);
   };
 
   const approveMarketExpense = (id: string) => {
@@ -46,14 +66,26 @@ export function useFinanceHandlers(
   };
 
   const addExpense = (exp: Omit<HouseExpense, "id" | "houseId" | "status">) => {
-    api.addBill(currentHouseId, exp).catch(() => null);
-    setExpenses(prev => [{ ...exp, id: "b" + (expenses.length + 1), houseId: currentHouseId, status: "paid" }, ...prev]);
+    const tempId = "b" + Date.now();
+    api.addBill(currentHouseId, exp).then((created: any) => {
+      const realId = created?.id || created?.data?.id;
+      if (realId) {
+        setExpenses(prev => prev.map(b => b.id === tempId ? { ...b, id: realId } : b));
+      }
+    }).catch(() => null);
+    setExpenses(prev => [{ ...exp, id: tempId, houseId: currentHouseId, status: "paid" }, ...prev]);
   };
 
   const applyFine = (fine: Omit<Fine, "id" | "houseId" | "memberName" | "status" | "allocation">) => {
     const member = members.find(m => m.id === fine.memberId) || members[0] || { name: "Member" };
-    api.applyFine(currentHouseId, fine).catch(() => null);
-    setFines(prev => [{ id: "f" + (fines.length + 1), houseId: currentHouseId, memberId: fine.memberId, memberName: member.name, amount: fine.amount, reason: fine.reason, date: fine.date, status: "unpaid", allocation: "House fund" }, ...prev]);
+    const tempId = "f" + Date.now();
+    api.applyFine(currentHouseId, fine).then((created: any) => {
+      const realId = created?.id || created?.data?.id;
+      if (realId) {
+        setFines(prev => prev.map(f => f.id === tempId ? { ...f, id: realId } : f));
+      }
+    }).catch(() => null);
+    setFines(prev => [{ id: tempId, houseId: currentHouseId, memberId: fine.memberId, memberName: member.name, amount: fine.amount, reason: fine.reason, date: fine.date, status: "unpaid", allocation: "House fund" }, ...prev]);
   };
 
   const markNotificationRead = (id: string) => {

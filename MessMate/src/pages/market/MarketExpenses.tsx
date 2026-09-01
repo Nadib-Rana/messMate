@@ -14,9 +14,10 @@ const statusVariant: Record<string, "success" | "danger" | "warning"> = {
 };
 
 export default function MarketExpenses() {
-  const { marketExpenses, members, submitMarketExpense, approveMarketExpense, rejectMarketExpense } = useApp();
+  const { marketExpenses, members, submitMarketExpense, approveMarketExpense, rejectMarketExpense, currentMember, currentUser } = useApp();
   const [showModal, setShowModal] = useState(false);
 
+  const isManager = currentMember?.role === "manager" || currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
   const totalApproved = marketExpenses.filter(e => e.status === "approved").reduce((a, e) => a + e.amount, 0);
   const pending = marketExpenses.filter(e => e.status === "pending");
 
@@ -62,8 +63,11 @@ export default function MarketExpenses() {
                       <Badge variant={statusVariant[exp.status]}>
                         <span className="flex items-center gap-1">{statusIcon[exp.status]} {exp.status}</span>
                       </Badge>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${exp.paymentSource === "member_pocket" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-indigo-50 text-indigo-700 border-indigo-200"}`}>
+                        {exp.paymentSource === "member_pocket" ? "👛 Personal Pocket" : "💵 Mess Cash"}
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{exp.date} · Purchased by <strong className="text-slate-600">{exp.paidByMemberName}</strong></p>
+                    <p className="text-xs text-slate-400 mt-0.5">{exp.date} · Purchased by <strong className="text-slate-700 font-bold">{exp.paidByMemberName || exp.memberName || "Member"}</strong></p>
                     {exp.description && <p className="text-xs text-slate-600 mt-1">{exp.description}</p>}
                     {exp.items && exp.items.length > 0 && (
                       <div className="mt-2.5 p-2.5 bg-slate-50 rounded-lg border border-slate-100">
@@ -82,7 +86,7 @@ export default function MarketExpenses() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-base font-bold text-slate-900 font-mono">{fmt(exp.amount)}</p>
-                  {exp.status === "pending" && (
+                  {isManager && exp.status === "pending" && (
                     <div className="flex gap-1.5 mt-2 justify-end">
                       <Btn size="xs" variant="success" onClick={() => approveMarketExpense(exp.id)}>Approve</Btn>
                       <Btn size="xs" variant="danger" onClick={() => rejectMarketExpense(exp.id)}>Reject</Btn>
@@ -95,7 +99,7 @@ export default function MarketExpenses() {
         </div>
       </Card>
 
-      <AddMarketExpenseModal open={showModal} onClose={() => setShowModal(false)} members={members} onSubmit={submitMarketExpense} />
+      <AddMarketExpenseModal open={showModal} onClose={() => setShowModal(false)} members={members} currentMember={currentMember} onSubmit={submitMarketExpense} />
     </div>
   );
 }

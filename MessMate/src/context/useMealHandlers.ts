@@ -86,9 +86,17 @@ export function useMealHandlers(
     });
   };
 
+  const disableAllMealsForDate = (date?: string) => {
+    const targetDate = date || new Date().toISOString().split("T")[0];
+    members.forEach(m => {
+      setMealExplicit(m.id, targetDate, false, false, false);
+    });
+  };
+
   return {
     toggleDailyMeal,
     setMealExplicit,
+    disableAllMealsForDate,
     updateWeeklySchedule,
     ...guestReqHandlers,
   };

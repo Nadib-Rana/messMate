@@ -15,6 +15,8 @@ export interface MarketExpense {
   description: string;
   paidByMemberId: string;
   paidByMemberName: string;
+  memberName?: string;
+  paymentSource?: "mess_cash" | "member_pocket";
   status: RequestStatus;
   items?: MarketItem[];
 }

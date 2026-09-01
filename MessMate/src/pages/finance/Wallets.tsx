@@ -7,12 +7,12 @@ import { AddPaymentModal } from "./components/AddPaymentModal";
 import { WalletHistoryModal } from "./components/WalletHistoryModal";
 import { WalletCardGrid } from "./components/WalletCardGrid";
 
-export default function Wallets({ role = "manager" }: { role?: UserRole }) {
-  const { walletPayments, members, memberSettlements, addPayment, currentHouse, currentMember } = useApp();
+export default function Wallets({ role }: { role?: UserRole }) {
+  const { walletPayments, members, memberSettlements, addPayment, currentHouse, currentMember, currentUser } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [historyMemberId, setHistoryMemberId] = useState<string | null>(null);
 
-  const isManager = role === "manager";
+  const isManager = role === "manager" || currentMember?.role === "manager" || currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
   const meMember = (currentMember && currentMember.role === "member") ? currentMember : (members.find(m => m.role === "member") || members[0]);
 
   const [selectedMemberId, setSelectedMemberId] = useState(isManager ? (members[0]?.id || "") : meMember.id);

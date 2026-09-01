@@ -9,8 +9,8 @@ export function generateRotationSchedule(
   startDate: Date,
   durationDays: number = 3,
   periodsCount: number = 5
-): { period: string; member: Member }[] {
-  const schedule: { period: string; member: Member }[] = [];
+): { period: string; startDate: string; endDate: string; member: Member }[] {
+  const schedule: { period: string; startDate: string; endDate: string; member: Member }[] = [];
   const activeMembers = members.filter(m => m.status === "active");
   if (activeMembers.length === 0) return schedule;
 
@@ -22,10 +22,12 @@ export function generateRotationSchedule(
     const currentEnd = new Date(currentStart);
     currentEnd.setDate(currentEnd.getDate() + durationDays - 1);
 
+    const sIso = currentStart.toISOString().split("T")[0];
+    const eIso = currentEnd.toISOString().split("T")[0];
     const periodStr = `${monthNames[currentStart.getMonth()]} ${currentStart.getDate()}–${currentEnd.getDate()}`;
     const member = activeMembers[i % activeMembers.length];
 
-    schedule.push({ period: periodStr, member });
+    schedule.push({ period: periodStr, startDate: sIso, endDate: eIso, member });
 
     // Move to next start
     currentStart = new Date(currentEnd);

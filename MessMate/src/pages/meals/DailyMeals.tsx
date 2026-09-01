@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { Calendar as CalIcon } from "lucide-react";
 
 import { OverrideModal } from "./components/OverrideModal";
+import { EmergencyAllMealsOffModal } from "./components/EmergencyAllMealsOffModal";
 import { CalendarView } from "./components/CalendarView";
 import { WeeklyScheduleView } from "./components/WeeklyScheduleView";
 import { DailyMealTable } from "./components/DailyMealTable";
@@ -18,10 +19,13 @@ export default function DailyMeals() {
     weeklySchedules,
     updateWeeklySchedule,
     currentMember,
+    updateSettings,
+    disableAllMealsForDate,
   } = useApp();
 
   const [view, setView] = useState("Table");
   const [showOverride, setShowOverride] = useState(false);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
   const { mealWeights } = currentHouse.setting;
   const isManager = currentMember?.role === "manager";
@@ -71,21 +75,71 @@ export default function DailyMeals() {
 
       {view === "Table" && (
         <>
-          <div className="flex items-center gap-4 mb-4 text-xs text-slate-500">
-            <span className="flex items-center gap-1.5">
+          <div className="flex items-center gap-4 mb-4 text-xs text-slate-500 flex-wrap">
+            <span className="flex items-center gap-1.5 font-semibold text-slate-700">
               <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold">B</span>
               Breakfast ({mealWeights.breakfast})
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 font-semibold text-slate-700">
               <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold">L</span>
               Lunch ({mealWeights.lunch})
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 font-semibold text-slate-700">
               <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold">D</span>
               Dinner ({mealWeights.dinner})
             </span>
+
             {isManager && (
-              <span className="ml-auto text-slate-400 italic">Toggles only active on today's row</span>
+              <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">1-Click Rules:</span>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ mealWeights: { breakfast: mealWeights.breakfast > 0 ? 0 : 0.5, lunch: mealWeights.lunch, dinner: mealWeights.dinner } })}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors shadow-2xs ${
+                    mealWeights.breakfast > 0
+                      ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  }`}
+                >
+                  {mealWeights.breakfast > 0 ? "🚫 Breakfast OFF" : "✅ Breakfast ON (0.5)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ mealWeights: { breakfast: mealWeights.breakfast, lunch: mealWeights.lunch > 0 ? 0 : 1.0, dinner: mealWeights.dinner } })}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors shadow-2xs ${
+                    mealWeights.lunch > 0
+                      ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  }`}
+                >
+                  {mealWeights.lunch > 0 ? "🚫 Lunch OFF" : "✅ Lunch ON (1.0)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ mealWeights: { breakfast: mealWeights.breakfast, lunch: mealWeights.lunch, dinner: mealWeights.dinner > 0 ? 0 : 1.0 } })}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors shadow-2xs ${
+                    mealWeights.dinner > 0
+                      ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  }`}
+                >
+                  {mealWeights.dinner > 0 ? "🚫 Dinner OFF" : "✅ Dinner ON (1.0)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEmergencyModal(true)}
+                  className="px-2.5 py-1 bg-amber-500 text-white border border-amber-600 rounded-lg hover:bg-amber-600 font-bold text-xs transition-colors shadow-xs flex items-center gap-1"
+                >
+                  🚨 Emergency ALL Meals OFF (Select Date)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ mealWeights: { breakfast: 0.5, lunch: 1.0, dinner: 1.0 } })}
+                  className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 font-semibold text-xs transition-colors shadow-2xs"
+                >
+                  ⚡ Reset (0.5/1/1)
+                </button>
+              </div>
             )}
           </div>
 
@@ -97,6 +151,14 @@ export default function DailyMeals() {
             toggleDailyMeal={toggleDailyMeal}
           />
         </>
+      )}
+
+      {showEmergencyModal && (
+        <EmergencyAllMealsOffModal
+          open={showEmergencyModal}
+          onClose={() => setShowEmergencyModal(false)}
+          onConfirm={(dateStr) => disableAllMealsForDate(dateStr)}
+        />
       )}
     </div>
   );

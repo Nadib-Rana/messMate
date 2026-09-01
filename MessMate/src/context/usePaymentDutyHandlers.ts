@@ -21,9 +21,11 @@ export function usePaymentDutyHandlers(
     try {
       const created = await api.assignMarketDuty(currentHouseId, duty);
       const realId = created?.id || created?.data?.id || ("d" + (marketDuties.length + 1));
-      setMarketDuties(prev => [{ id: realId, houseId: currentHouseId, memberId: duty.memberId, memberName: member.name, startDate: duty.startDate, endDate: duty.endDate, status: computedStatus }, ...prev]);
+      const newDuty = { id: realId, houseId: currentHouseId, memberId: duty.memberId, memberName: member.name, startDate: duty.startDate, endDate: duty.endDate, status: computedStatus };
+      setMarketDuties(prev => [...prev, newDuty].sort((a, b) => (a.startDate || "").localeCompare(b.startDate || "")));
     } catch {
-      setMarketDuties(prev => [{ id: "d" + (marketDuties.length + 1), houseId: currentHouseId, memberId: duty.memberId, memberName: member.name, startDate: duty.startDate, endDate: duty.endDate, status: computedStatus }, ...prev]);
+      const newDuty = { id: "d" + (marketDuties.length + 1), houseId: currentHouseId, memberId: duty.memberId, memberName: member.name, startDate: duty.startDate, endDate: duty.endDate, status: computedStatus };
+      setMarketDuties(prev => [...prev, newDuty].sort((a, b) => (a.startDate || "").localeCompare(b.startDate || "")));
     }
   };
 
@@ -39,8 +41,14 @@ export function usePaymentDutyHandlers(
 
   const addPayment = (pay: Omit<WalletPayment, "id" | "houseId" | "memberName" | "status">) => {
     const member = members.find(m => m.id === pay.memberId) || members[0] || { name: "Member" };
-    api.addPayment(currentHouseId, pay).catch(() => null);
-    setWalletPayments(prev => [{ id: "wp" + (walletPayments.length + 1), houseId: currentHouseId, memberId: pay.memberId, memberName: member.name, amount: pay.amount, method: pay.method, transactionId: pay.transactionId, date: pay.date, status: "pending" }, ...prev]);
+    const tempId = "wp" + Date.now();
+    api.addPayment(currentHouseId, pay).then((created: any) => {
+      const realId = created?.id || created?.data?.id;
+      if (realId) {
+        setWalletPayments(prev => prev.map(p => p.id === tempId ? { ...p, id: realId } : p));
+      }
+    }).catch(() => null);
+    setWalletPayments(prev => [{ id: tempId, houseId: currentHouseId, memberId: pay.memberId, memberName: member.name, amount: pay.amount, method: pay.method, transactionId: pay.transactionId, date: pay.date, status: "pending" }, ...prev]);
   };
 
   const approvePayment = (id: string) => {
