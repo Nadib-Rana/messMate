@@ -74,7 +74,7 @@ export default function App() {
   function renderPage() {
     switch (page) {
       case "dashboard": return role === "manager" ? <Dashboard /> : <MemberDashboard />;
-      case "meals.daily": return <DailyMeals />;
+      case "meals.daily": return <DailyMeals onNavigate={setPage} />;
       case "meals.summary": return <MealSummary />;
       case "meals.requests": return <MealRequests />;
       case "meals.guests": return <GuestMeals />;

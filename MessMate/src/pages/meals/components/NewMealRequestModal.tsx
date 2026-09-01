@@ -1,21 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Input, Btn } from "../../../components/ui";
 
 export function NewMealRequestModal({
   open,
   onClose,
+  initialDate,
   onSubmit,
 }: {
   open: boolean;
   onClose: () => void;
+  initialDate?: string;
   onSubmit: (req: { startDate: string; endDate: string; reason: string; meals: { breakfast: boolean; lunch: boolean; dinner: boolean } }) => void;
 }) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(initialDate || "");
+  const [endDate, setEndDate] = useState(initialDate || "");
   const [reason, setReason] = useState("");
   const [breakfast, setBreakfast] = useState(true);
   const [lunch, setLunch] = useState(true);
   const [dinner, setDinner] = useState(true);
+
+  useEffect(() => {
+    if (open) {
+      setStartDate(initialDate || new Date().toISOString().split("T")[0]);
+      setEndDate(initialDate || new Date().toISOString().split("T")[0]);
+    }
+  }, [open, initialDate]);
 
   const handleSubmit = () => {
     if (!startDate || !endDate || !reason || endDate < startDate || (!breakfast && !lunch && !dinner)) return;

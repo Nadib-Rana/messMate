@@ -106,8 +106,23 @@ This document maintains a continuous record of features, architecture updates, b
 - **Auto-Selection Logic**: Updated [AddMarketExpenseModal.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/AddMarketExpenseModal.tsx) and [MarketExpenses.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketExpenses.tsx) so that when a user opens the **Submit Market Expense** modal, the **Purchased By** dropdown automatically pre-selects the logged-in member's own name (`currentMember.id`).
 
 #### 17. Restricted Market Duty Controls (Manager & Admin Only)
-- **Duty Action Buttons Guard**: Updated [MarketDuty.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketDuty.tsx). The **`Auto-Rotate`**, **`+ Assign Duty`**, **`Configure Settings`**, and **`Clean Duplicates`** buttons are now strictly hidden for regular members and only accessible to Manager / Admin accounts.
+- **Duty Action Buttons Guard**: Updated [MarketDuty.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/MarketDuty.tsx). The **`Auto-Rotate`**, **`+ Assign Duty`**, **`Configure Settings`**, and **`Clean Duplicates`** buttons are strictly hidden for regular members and only accessible to Manager / Admin accounts.
 - **Duty Deletion Guard**: Updated [DutyCardGrid.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/market/components/DutyCardGrid.tsx) so the duty card deletion icon (`Trash2`) is strictly hidden for regular members and restricted to Manager / Admin accounts.
+
+#### 18. Member Weekly Schedule Recurring Preference (Member Accessible)
+- **Member Access Alignment**: Confirmed and updated [WeeklyScheduleView.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/WeeklyScheduleView.tsx). Regular Members can view and toggle their own weekly recurring meal schedule preferences (`Weekly Schedule for Sumon`), while Managers can switch member dropdowns to configure any member's weekly schedule.
+
+#### 19. Direct Member Meal Off / On Request Integration
+- **Header Meal Request Button**: Added a prominent **`+ Request Meal Off / On`** button on [DailyMeals.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/DailyMeals.tsx) for regular members.
+- **Table Cell Click Request Integration**: Updated [DailyMealTable.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/DailyMealTable.tsx) and [NewMealRequestModal.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/NewMealRequestModal.tsx).
+
+#### 20. Member Weekly Schedule Change Request & Manager Approval Auto-Sync
+- **Weekly Preference Draft & Submit Button**: Updated [WeeklyScheduleView.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/WeeklyScheduleView.tsx). Added a bottom action card with **`📩 Submit Weekly Schedule Request to Manager`** button. When a member toggles B/L/D preferences (`Monday`, `Friday`, etc.), changes are drafted and highlighted until submitted for Manager approval.
+- **Automatic System Schedule Sync**: Updated [useGuestRequestHandlers.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/context/useGuestRequestHandlers.ts) and [MealRequests.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/MealRequests.tsx). When a Manager approves a Weekly Schedule Change Request, the system automatically syncs (`updateWeeklySchedule`) the member's recurring weekly preferences into official system state.
+- **Manager Approval Locations & Shortcut**:
+  - **Dashboard Approval Banner**: High-priority alert banner on [Dashboard.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/Dashboard.tsx).
+  - **Meal Requests Dedicated Page**: Detailed request review and 1-click Approve/Reject on [MealRequests.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/MealRequests.tsx).
+  - **Daily Meals Header Shortcut**: Added a pulsing **`⚠️ [N] Pending Request(s)`** manager shortcut button on [DailyMeals.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/DailyMeals.tsx) that navigates directly to the review list.
 
 ---
 

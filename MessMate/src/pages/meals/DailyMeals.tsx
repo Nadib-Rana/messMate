@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { PageHeader, Tabs, Btn } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
-import { Calendar as CalIcon } from "lucide-react";
+import { Calendar as CalIcon, Plus, AlertCircle } from "lucide-react";
 
 import { OverrideModal } from "./components/OverrideModal";
 import { EmergencyAllMealsOffModal } from "./components/EmergencyAllMealsOffModal";
+import { NewMealRequestModal } from "./components/NewMealRequestModal";
 import { CalendarView } from "./components/CalendarView";
 import { WeeklyScheduleView } from "./components/WeeklyScheduleView";
 import { DailyMealTable } from "./components/DailyMealTable";
 
-export default function DailyMeals() {
+export default function DailyMeals({ onNavigate }: { onNavigate?: (page: any) => void }) {
   const {
     dailyMeals,
     members,
@@ -21,17 +22,27 @@ export default function DailyMeals() {
     currentMember,
     updateSettings,
     disableAllMealsForDate,
+    submitMealRequest,
+    mealRequests,
   } = useApp();
 
   const [view, setView] = useState("Table");
   const [showOverride, setShowOverride] = useState(false);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [showMealRequestModal, setShowMealRequestModal] = useState(false);
+  const [selectedRequestDate, setSelectedRequestDate] = useState<string | undefined>(undefined);
 
   const { mealWeights } = currentHouse.setting;
   const isManager = currentMember?.role === "manager";
+  const pendingRequestsCount = mealRequests.filter(r => r.status === "pending").length;
 
   const handleOverrideSave = (memberId: string, date: string, breakfast: boolean, lunch: boolean, dinner: boolean) => {
     setMealExplicit(memberId, date, breakfast, lunch, dinner);
+  };
+
+  const handleOpenMealRequest = (date?: string) => {
+    setSelectedRequestDate(date);
+    setShowMealRequestModal(true);
   };
 
   return (
@@ -40,8 +51,23 @@ export default function DailyMeals() {
         title="Daily Meals"
         subtitle="Track daily meal consumption and recurring weekly schedules"
         action={
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center flex-wrap">
             <Tabs tabs={["Table", "Calendar", "Weekly Schedule"]} active={view} onChange={setView} />
+            {isManager && pendingRequestsCount > 0 && (
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate("meals.requests")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors shadow-2xs cursor-pointer animate-pulse"
+              >
+                <AlertCircle size={14} className="text-amber-600" />
+                {pendingRequestsCount} Pending Request{pendingRequestsCount > 1 ? "s" : ""}
+              </button>
+            )}
+            {!isManager && (
+              <Btn size="sm" variant="primary" onClick={() => handleOpenMealRequest()}>
+                <Plus size={14} /> Request Meal Off / On
+              </Btn>
+            )}
             {isManager && view === "Table" && (
               <Btn size="sm" variant="primary" onClick={() => setShowOverride(true)}>
                 <CalIcon size={14} /> Override
@@ -69,6 +95,7 @@ export default function DailyMeals() {
           currentMember={currentMember}
           weeklySchedules={weeklySchedules}
           updateWeeklySchedule={updateWeeklySchedule}
+          submitMealRequest={submitMealRequest}
           isManager={isManager}
         />
       )}
@@ -149,6 +176,7 @@ export default function DailyMeals() {
             mealWeights={mealWeights}
             isManager={isManager}
             toggleDailyMeal={toggleDailyMeal}
+            onRequestMealChange={handleOpenMealRequest}
           />
         </>
       )}
@@ -158,6 +186,15 @@ export default function DailyMeals() {
           open={showEmergencyModal}
           onClose={() => setShowEmergencyModal(false)}
           onConfirm={(dateStr) => disableAllMealsForDate(dateStr)}
+        />
+      )}
+
+      {showMealRequestModal && (
+        <NewMealRequestModal
+          open={showMealRequestModal}
+          onClose={() => setShowMealRequestModal(false)}
+          initialDate={selectedRequestDate}
+          onSubmit={submitMealRequest}
         />
       )}
     </div>

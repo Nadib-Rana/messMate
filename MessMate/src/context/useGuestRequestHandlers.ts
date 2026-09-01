@@ -9,7 +9,8 @@ export function useGuestRequestHandlers(
   guestMeals: GuestMeal[],
   setGuestMeals: React.Dispatch<React.SetStateAction<GuestMeal[]>>,
   members: Member[],
-  mealRate: number
+  mealRate: number,
+  onApproveWeeklySchedule?: (memberId: string, dayOfWeek: string, meal: "breakfast" | "lunch" | "dinner", value: boolean) => void
 ) {
   const submitMealRequest = (req: Omit<MealStopRequest, "id" | "houseId" | "memberId" | "memberName" | "avatar" | "status" | "submittedAt">) => {
     const member = currentMember;
@@ -24,6 +25,7 @@ export function useGuestRequestHandlers(
       startDate: req.startDate,
       endDate: req.endDate,
       meals: req.meals || { breakfast: true, lunch: true, dinner: true },
+      weeklyScheduleChanges: req.weeklyScheduleChanges,
       reason: req.reason,
       status: "pending",
       submittedAt: new Date().toISOString().split("T")[0],
@@ -33,6 +35,12 @@ export function useGuestRequestHandlers(
 
   const approveMealRequest = (id: string) => {
     api.approveMealRequest(currentHouseId, id).catch(() => null);
+    const req = mealRequests.find(r => r.id === id);
+    if (req?.weeklyScheduleChanges && req.weeklyScheduleChanges.length > 0 && onApproveWeeklySchedule) {
+      req.weeklyScheduleChanges.forEach((change: any) => {
+        onApproveWeeklySchedule(req.memberId, change.dayOfWeek, change.meal, change.value);
+      });
+    }
     setMealRequests(prev => prev.map(r => r.id === id ? { ...r, status: "approved" } : r));
   };
 

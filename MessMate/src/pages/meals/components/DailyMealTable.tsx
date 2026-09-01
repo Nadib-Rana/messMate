@@ -9,12 +9,14 @@ export function DailyMealTable({
   mealWeights,
   isManager,
   toggleDailyMeal,
+  onRequestMealChange,
 }: {
   dailyMeals: any[];
   members: any[];
   mealWeights: any;
   isManager: boolean;
   toggleDailyMeal: (memberId: string, meal: "breakfast" | "lunch" | "dinner", date?: string) => void;
+  onRequestMealChange?: (date: string) => void;
 }) {
   if (dailyMeals.length === 0) {
     return (
@@ -68,6 +70,13 @@ export function DailyMealTable({
                     if (!member) return null;
                     const meals = calculateDailyMealWeight(dm.breakfast, dm.lunch, dm.dinner, mealWeights);
                     const canToggle = isManager && isToday;
+                    const handleMealClick = () => {
+                      if (canToggle) {
+                        toggleDailyMeal(dm.id, "breakfast", day.date);
+                      } else if (!isManager && onRequestMealChange) {
+                        onRequestMealChange(day.date);
+                      }
+                    };
 
                     return (
                       <tr key={dm.id} className="border-b border-slate-50 hover:bg-slate-50/50">
@@ -82,24 +91,24 @@ export function DailyMealTable({
                           <MealToggle
                             on={dm.breakfast}
                             label="Breakfast"
-                            disabled={!canToggle}
-                            onClick={canToggle ? () => toggleDailyMeal(dm.id, "breakfast", day.date) : undefined}
+                            disabled={!canToggle && !onRequestMealChange}
+                            onClick={canToggle ? () => toggleDailyMeal(dm.id, "breakfast", day.date) : (onRequestMealChange ? () => onRequestMealChange(day.date) : undefined)}
                           />
                         </td>
                         <td className="px-3 py-2.5 text-center">
                           <MealToggle
                             on={dm.lunch}
                             label="Lunch"
-                            disabled={!canToggle}
-                            onClick={canToggle ? () => toggleDailyMeal(dm.id, "lunch", day.date) : undefined}
+                            disabled={!canToggle && !onRequestMealChange}
+                            onClick={canToggle ? () => toggleDailyMeal(dm.id, "lunch", day.date) : (onRequestMealChange ? () => onRequestMealChange(day.date) : undefined)}
                           />
                         </td>
                         <td className="px-3 py-2.5 text-center">
                           <MealToggle
                             on={dm.dinner}
                             label="Dinner"
-                            disabled={!canToggle}
-                            onClick={canToggle ? () => toggleDailyMeal(dm.id, "dinner", day.date) : undefined}
+                            disabled={!canToggle && !onRequestMealChange}
+                            onClick={canToggle ? () => toggleDailyMeal(dm.id, "dinner", day.date) : (onRequestMealChange ? () => onRequestMealChange(day.date) : undefined)}
                           />
                         </td>
                         <td className="px-4 py-2.5 text-right">

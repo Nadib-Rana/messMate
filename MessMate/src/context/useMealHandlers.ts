@@ -16,6 +16,20 @@ export function useMealHandlers(
   members: Member[],
   mealRate: number
 ) {
+  const updateWeeklySchedule = (memberId: string, dayOfWeek: string, meal: "breakfast" | "lunch" | "dinner", value: boolean) => {
+    api.updateWeeklySchedule(currentHouseId, { memberId, dayOfWeek, [meal]: value }).catch(() => null);
+    setWeeklySchedules(prev => {
+      const idx = prev.findIndex(s => s.memberId === memberId && s.dayOfWeek === dayOfWeek);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], [meal]: value };
+        return updated;
+      } else {
+        return [...prev, { memberId, dayOfWeek, breakfast: meal === "breakfast" ? value : true, lunch: meal === "lunch" ? value : true, dinner: meal === "dinner" ? value : true }];
+      }
+    });
+  };
+
   const guestReqHandlers = useGuestRequestHandlers(
     currentHouseId,
     currentMember,
@@ -24,7 +38,8 @@ export function useMealHandlers(
     guestMeals,
     setGuestMeals,
     members,
-    mealRate
+    mealRate,
+    updateWeeklySchedule
   );
 
   const toggleDailyMeal = (memberId: string, meal: "breakfast" | "lunch" | "dinner", date?: string) => {
@@ -68,20 +83,6 @@ export function useMealHandlers(
         return updated;
       } else {
         return [{ date, day: new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short" }), members: [newEntry] }, ...prev];
-      }
-    });
-  };
-
-  const updateWeeklySchedule = (memberId: string, dayOfWeek: string, meal: "breakfast" | "lunch" | "dinner", value: boolean) => {
-    api.updateWeeklySchedule(currentHouseId, { memberId, dayOfWeek, [meal]: value }).catch(() => null);
-    setWeeklySchedules(prev => {
-      const idx = prev.findIndex(s => s.memberId === memberId && s.dayOfWeek === dayOfWeek);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx] = { ...updated[idx], [meal]: value };
-        return updated;
-      } else {
-        return [...prev, { memberId, dayOfWeek, breakfast: meal === "breakfast" ? value : true, lunch: meal === "lunch" ? value : true, dinner: meal === "dinner" ? value : true }];
       }
     });
   };

@@ -28,6 +28,7 @@ export interface MealStopRequest {
   startDate: string;
   endDate: string;
   meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
+  weeklyScheduleChanges?: any[];
   reason: string;
   status: RequestStatus;
   submittedAt: string;
