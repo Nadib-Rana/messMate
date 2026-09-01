@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:17-alpine
-    container_name: nest_starter_postgres
+    container_name: messmate_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -13,14 +13,14 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - nest_postgres_data:/var/lib/postgresql/data
+      - messmate_postgres_data:/var/lib/postgresql/data
     networks:
-      - nest_starter_network
+      - messmate_network
 
   # MinIO Object Storage (S3 compatible)
   minio:
     image: minio/minio:latest
-    container_name: nest_starter_minio
+    container_name: messmate_minio
     restart: unless-stopped
     ports:
       - "9000:9000" # S3 API Port
@@ -29,28 +29,28 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
-      - nest_minio_data:/data
+      - messmate_minio_data:/data
     command: server /data --console-address ":9001"
     networks:
-      - nest_starter_network
+      - messmate_network
 
   # Mailpit - Local Email Testing Server with Web UI
   mailpit:
     image: axllent/mailpit:latest
-    container_name: nest_starter_mailpit
+    container_name: messmate_mailpit
     restart: unless-stopped
     ports:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web UI
     networks:
-      - nest_starter_network
+      - messmate_network
 
 networks:
-  nest_starter_network:
+  messmate_network:
     driver: bridge
 
 volumes:
-  nest_postgres_data:
+  messmate_postgres_data:
     driver: local
-  nest_minio_data:
+  messmate_minio_data:
     driver: local

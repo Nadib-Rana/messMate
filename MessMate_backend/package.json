@@ -1,11 +1,12 @@
 {
-  "name": "nest-project-start-template",
+  "name": "messmate-backend",
   "version": "1.0.0",
-  "description": "Production-ready Enterprise NestJS Starter Template with Prisma, PostgreSQL, JWT Auth, RBAC, MinIO Storage, Mailer, Swagger OpenAPI, and Docker",
-  "author": "Nest Starter Template",
+  "description": "MessMate Multi-House Bachelor Mess Management Backend API with Prisma, PostgreSQL, JWT Auth, RBAC, MinIO Storage, Mailer, Swagger OpenAPI, and Docker",
+  "author": "MessMate",
   "private": true,
   "license": "MIT",
   "scripts": {
+    "dev": "nest start --watch",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

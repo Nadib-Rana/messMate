@@ -247,6 +247,9 @@ model MealStopRequest {
   memberId      String        @db.Uuid @map("member_id")
   startDate     DateTime      @db.Date @map("start_date")
   endDate       DateTime      @db.Date @map("end_date")
+  breakfast     Boolean       @default(true)
+  lunch         Boolean       @default(true)
+  dinner        Boolean       @default(true)
   reason        String
   status        RequestStatus @default(PENDING)
   approvedById  String?       @db.Uuid @map("approved_by_id")

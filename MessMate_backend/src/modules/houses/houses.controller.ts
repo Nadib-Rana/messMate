@@ -31,4 +31,14 @@ export class HousesController {
   async updateSettings(@Param("houseId") houseId: string, @Body() body: any) {
     return this.housesService.updateSettings(houseId, body);
   }
+
+  @Patch(":houseId/members/:memberId")
+  @ApiOperation({ summary: "Update member role, status, or meal plan" })
+  async updateMember(
+    @Param("houseId") houseId: string,
+    @Param("memberId") memberId: string,
+    @Body() body: { mealPlan?: string; role?: string; status?: string }
+  ) {
+    return this.housesService.updateMember(houseId, memberId, body);
+  }
 }

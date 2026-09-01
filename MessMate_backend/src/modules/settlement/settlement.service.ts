@@ -5,9 +5,19 @@ import { PrismaService } from "../../database/prisma.service";
 export class SettlementService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async resolveHouseId(houseId: string): Promise<string | null> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(houseId);
+    if (isUuid) return houseId;
+    const firstHouse = await this.prisma.house.findFirst();
+    return firstHouse ? firstHouse.id : null;
+  }
+
   async getSettlement(houseId: string, month: string = "August 2026") {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return null;
+
     const closing = await this.prisma.monthlyClosing.findUnique({
-      where: { houseId_month: { houseId, month } },
+      where: { houseId_month: { houseId: targetHouseId, month } },
       include: {
         snapshots: {
           include: { member: { include: { user: true } } },
@@ -42,20 +52,23 @@ export class SettlementService {
   }
 
   async generateSettlement(houseId: string, month: string = "August 2026") {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return null;
+
     const marketExpenses = await this.prisma.marketExpense.findMany({
-      where: { houseId, status: "APPROVED" },
+      where: { houseId: targetHouseId, status: "APPROVED" },
     });
     const totalFoodExpense = marketExpenses.reduce((a, e) => a + Number(e.amount), 0);
 
-    const meals = await this.prisma.dailyMealRecord.findMany({ where: { houseId } });
+    const meals = await this.prisma.dailyMealRecord.findMany({ where: { houseId: targetHouseId } });
     const totalWeightedMeals = meals.reduce((a, m) => a + Number(m.weightedCount), 0) || 1;
     const finalMealRate = Math.round((totalFoodExpense / totalWeightedMeals) * 100) / 100;
 
-    const houseExpenses = await this.prisma.houseExpense.findMany({ where: { houseId } });
+    const houseExpenses = await this.prisma.houseExpense.findMany({ where: { houseId: targetHouseId } });
     const totalOtherExpense = houseExpenses.reduce((a, e) => a + Number(e.amount), 0);
 
     return this.prisma.monthlyClosing.upsert({
-      where: { houseId_month: { houseId, month } },
+      where: { houseId_month: { houseId: targetHouseId, month } },
       update: {
         totalFoodExpense,
         totalWeightedMeals,
@@ -64,7 +77,7 @@ export class SettlementService {
         status: "GENERATED",
       },
       create: {
-        houseId,
+        houseId: targetHouseId,
         month,
         totalFoodExpense,
         totalWeightedMeals,
@@ -76,15 +89,21 @@ export class SettlementService {
   }
 
   async closeMonth(houseId: string, month: string = "August 2026") {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return null;
+
     return this.prisma.monthlyClosing.update({
-      where: { houseId_month: { houseId, month } },
+      where: { houseId_month: { houseId: targetHouseId, month } },
       data: { status: "CLOSED", closedAt: new Date() },
     });
   }
 
   async reopenMonth(houseId: string, month: string = "August 2026") {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return null;
+
     return this.prisma.monthlyClosing.update({
-      where: { houseId_month: { houseId, month } },
+      where: { houseId_month: { houseId: targetHouseId, month } },
       data: { status: "OPEN", closedAt: null },
     });
   }

@@ -1,4 +1,4 @@
-import { PrismaClient, Role, UserStatus } from "@prisma/client";
+import { PrismaClient, Role, UserStatus, HouseRole, MemberStatus } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -79,11 +79,11 @@ async function main() {
       },
       members: {
         create: [
-          { userId: managerUser.id, role: "MANAGER", status: "ACTIVE", mealPlan: "Full" },
+          { userId: managerUser.id, role: HouseRole.MANAGER, status: MemberStatus.ACTIVE, mealPlan: "Full" },
           ...createdMemberUsers.map(u => ({
             userId: u.user.id,
-            role: "MEMBER" as const,
-            status: "ACTIVE" as const,
+            role: HouseRole.MEMBER,
+            status: MemberStatus.ACTIVE,
             mealPlan: u.plan,
           })),
         ],

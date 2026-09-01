@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Body, Param } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { MarketService } from "./market.service";
 
@@ -17,6 +17,18 @@ export class MarketController {
   @ApiOperation({ summary: "Assign market duty" })
   async assignMarketDuty(@Param("houseId") houseId: string, @Body() body: any) {
     return this.marketService.assignMarketDuty({ ...body, houseId });
+  }
+
+  @Delete("duties/clear")
+  @ApiOperation({ summary: "Clear market duties" })
+  async clearDuties(@Param("houseId") houseId: string) {
+    return this.marketService.clearDuties(houseId);
+  }
+
+  @Delete("duties/:id")
+  @ApiOperation({ summary: "Delete single market duty" })
+  async deleteMarketDuty(@Param("id") id: string) {
+    return this.marketService.deleteMarketDuty(id);
   }
 
   @Get("expenses")

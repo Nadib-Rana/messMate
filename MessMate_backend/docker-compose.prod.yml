@@ -6,12 +6,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nest_starter_api
+    container_name: messmate_api
     restart: always
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/nest_starter_db?schema=public
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/messmate_db?schema=public
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       STORAGE_ENDPOINT: minio
@@ -30,26 +30,26 @@ services:
       - postgres
       - minio
     networks:
-      - nest_starter_network
+      - messmate_network
 
   # PostgreSQL
   postgres:
     image: postgres:17-alpine
-    container_name: nest_starter_prod_postgres
+    container_name: messmate_prod_postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: nest_starter_db
+      POSTGRES_DB: messmate_db
     volumes:
-      - nest_prod_postgres_data:/var/lib/postgresql/data
+      - messmate_prod_postgres_data:/var/lib/postgresql/data
     networks:
-      - nest_starter_network
+      - messmate_network
 
   # MinIO
   minio:
     image: minio/minio:latest
-    container_name: nest_starter_prod_minio
+    container_name: messmate_prod_minio
     restart: always
     ports:
       - "9000:9000"
@@ -57,17 +57,17 @@ services:
       MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin}
     volumes:
-      - nest_prod_minio_data:/data
+      - messmate_prod_minio_data:/data
     command: server /data
     networks:
-      - nest_starter_network
+      - messmate_network
 
 networks:
-  nest_starter_network:
+  messmate_network:
     driver: bridge
 
 volumes:
-  nest_prod_postgres_data:
+  messmate_prod_postgres_data:
     driver: local
-  nest_prod_minio_data:
+  messmate_prod_minio_data:
     driver: local

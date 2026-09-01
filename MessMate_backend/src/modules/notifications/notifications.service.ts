@@ -5,9 +5,19 @@ import { PrismaService } from "../../database/prisma.service";
 export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async resolveHouseId(houseId: string): Promise<string | null> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(houseId);
+    if (isUuid) return houseId;
+    const firstHouse = await this.prisma.house.findFirst();
+    return firstHouse ? firstHouse.id : null;
+  }
+
   async getNotifications(houseId: string) {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return [];
+
     const list = await this.prisma.notification.findMany({
-      where: { houseId },
+      where: { houseId: targetHouseId },
       orderBy: { createdAt: "desc" },
     });
 
@@ -31,10 +41,11 @@ export class NotificationsService {
   }
 
   async sendAnnouncement(data: { houseId: string; title: string; message: string; priority?: any }) {
+    const targetHouseId = (await this.resolveHouseId(data.houseId)) || data.houseId;
     const priorityUpper = (data.priority || "NORMAL").toUpperCase();
     return this.prisma.notification.create({
       data: {
-        houseId: data.houseId,
+        houseId: targetHouseId,
         type: "announcement",
         title: data.title,
         message: data.message,

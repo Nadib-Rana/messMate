@@ -1,19 +1,19 @@
 import { PageHeader, Card, Badge, Avatar, Btn, fmt } from "../components/ui";
-import { MONTHLY_TREND } from "../data/mock";
 import { useApp } from "../context/AppContext";
 import { Download } from "lucide-react";
 
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   return (
     <div className="flex-1 bg-slate-100 rounded-full h-2">
-      <div className="h-2 rounded-full" style={{ width: `${(value / max) * 100}%`, backgroundColor: color }} />
+      <div className="h-2 rounded-full" style={{ width: `${max > 0 ? (value / max) * 100 : 0}%`, backgroundColor: color }} />
     </div>
   );
 }
 
 export default function Reports() {
   const { totalFoodExpense, totalWeightedMeals, mealRate, expenses, memberSettlements } = useApp();
-  const maxFood = Math.max(...MONTHLY_TREND.map(d => d.food));
+  const currentMonthName = new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  const maxFood = Math.max(totalFoodExpense, 1);
   const totalOtherExpense = expenses.reduce((a, e) => a + e.amount, 0);
 
   return (
@@ -31,15 +31,9 @@ export default function Reports() {
 
       {/* Month selector */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-        {MONTHLY_TREND.map((m, i) => (
-          <button
-            key={m.month}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all
-              ${i === MONTHLY_TREND.length - 1 ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-          >
-            {m.month} 2026
-          </button>
-        ))}
+        <button className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-indigo-600 text-white shadow-sm">
+          {currentMonthName}
+        </button>
       </div>
 
       {/* Overview */}
@@ -62,20 +56,18 @@ export default function Reports() {
         <Card className="p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Food Expense Trend</h3>
           <div className="space-y-3">
-            {MONTHLY_TREND.map((d, i) => (
-              <div key={d.month} className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-8 font-mono">{d.month}</span>
-                <MiniBar value={d.food} max={maxFood} color={i === MONTHLY_TREND.length - 1 ? "#4f46e5" : "#c7d2fe"} />
-                <span className="text-xs font-bold text-slate-700 font-mono w-20 text-right">{fmt(d.food)}</span>
-                <span className="text-xs text-slate-400 w-12 text-right">{d.meals}m</span>
-              </div>
-            ))}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500 w-12 font-mono">{currentMonthName}</span>
+              <MiniBar value={totalFoodExpense} max={maxFood} color="#4f46e5" />
+              <span className="text-xs font-bold text-slate-700 font-mono w-20 text-right">{fmt(totalFoodExpense)}</span>
+              <span className="text-xs text-slate-400 w-12 text-right">{totalWeightedMeals}m</span>
+            </div>
           </div>
         </Card>
 
         {/* Member balances */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Member Balance Report — August</h3>
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Member Balance Report — {currentMonthName}</h3>
           <div className="space-y-2">
             {memberSettlements.map(m => (
               <div key={m.memberId} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors">

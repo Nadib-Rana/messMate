@@ -54,4 +54,16 @@ export class MealsController {
   async addGuestMeal(@Param("houseId") houseId: string, @Body() body: any) {
     return this.mealsService.addGuestMeal({ ...body, houseId });
   }
+
+  @Get("weekly-schedules")
+  @ApiOperation({ summary: "Get weekly meal schedules" })
+  async getWeeklySchedules(@Param("houseId") houseId: string) {
+    return this.mealsService.getWeeklySchedules(houseId);
+  }
+
+  @Post("weekly-schedules")
+  @ApiOperation({ summary: "Update weekly meal schedule" })
+  async updateWeeklySchedule(@Param("houseId") houseId: string, @Body() body: any) {
+    return this.mealsService.updateWeeklySchedule({ ...body, houseId });
+  }
 }

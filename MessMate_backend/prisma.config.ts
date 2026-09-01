@@ -9,6 +9,6 @@ export default defineConfig({
   datasource: {
     url:
       process.env.DATABASE_URL ||
-      "postgresql://postgres:postgres@localhost:5432/nest_starter_db?schema=public",
+      "postgresql://postgres:postgres@localhost:5432/messmate_db?schema=public",
   },
 });

@@ -25,6 +25,12 @@ export class FinanceController {
     return this.financeService.getPayments(houseId);
   }
 
+  @Get("wallets")
+  @ApiOperation({ summary: "Get wallet advance payments (alias)" })
+  async getWallets(@Param("houseId") houseId: string) {
+    return this.financeService.getPayments(houseId);
+  }
+
   @Post("payments")
   @ApiOperation({ summary: "Add advance payment" })
   async addPayment(@Param("houseId") houseId: string, @Body() body: any) {
@@ -35,6 +41,12 @@ export class FinanceController {
   @ApiOperation({ summary: "Approve advance payment" })
   async approvePayment(@Param("id") id: string) {
     return this.financeService.updatePaymentStatus(id, "APPROVED");
+  }
+
+  @Patch("payments/:id/reject")
+  @ApiOperation({ summary: "Reject advance payment" })
+  async rejectPayment(@Param("id") id: string) {
+    return this.financeService.updatePaymentStatus(id, "REJECTED");
   }
 
   @Get("fines")

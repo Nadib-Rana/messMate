@@ -25,7 +25,8 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     throw new Error(errorData.message || `API Error: ${response.status}`);
   }
 
-  const data = await response.json();
+  const json = await response.json();
+  const data = json && typeof json === "object" && "data" in json ? json.data : json;
   console.log(`✅ [API ${method} ${response.status}] ${endpoint} Success:`, data);
   return data;
 }
@@ -40,6 +41,7 @@ export const api = {
   getHouses: () => request<any[]>("/houses/my-houses"),
   getHouseDetails: (houseId: string) => request<any>(`/houses/${houseId}`),
   updateHouseSettings: (houseId: string, settings: any) => request<any>(`/houses/${houseId}/settings`, { method: "PATCH", body: JSON.stringify(settings) }),
+  updateMember: (houseId: string, memberId: string, data: any) => request<any>(`/houses/${houseId}/members/${memberId}`, { method: "PATCH", body: JSON.stringify(data) }),
 
   // Meals
   getDailyMeals: (houseId: string, date?: string) => request<any[]>(`/houses/${houseId}/meals/daily?date=${date || ""}`),
@@ -51,10 +53,14 @@ export const api = {
   rejectMealRequest: (houseId: string, id: string) => request<any>(`/houses/${houseId}/meals/stop-requests/${id}/reject`, { method: "PATCH" }),
   getGuestMeals: (houseId: string) => request<any[]>(`/houses/${houseId}/meals/guests`),
   addGuestMeal: (houseId: string, data: any) => request<any>(`/houses/${houseId}/meals/guests`, { method: "POST", body: JSON.stringify(data) }),
+  getWeeklySchedules: (houseId: string) => request<any[]>(`/houses/${houseId}/meals/weekly-schedules`),
+  updateWeeklySchedule: (houseId: string, data: any) => request<any>(`/houses/${houseId}/meals/weekly-schedules`, { method: "POST", body: JSON.stringify(data) }),
 
   // Market
   getMarketDuties: (houseId: string) => request<any[]>(`/houses/${houseId}/market/duties`),
   assignMarketDuty: (houseId: string, data: any) => request<any>(`/houses/${houseId}/market/duties`, { method: "POST", body: JSON.stringify(data) }),
+  deleteMarketDuty: (houseId: string, id: string) => request<any>(`/houses/${houseId}/market/duties/${id}`, { method: "DELETE" }),
+  clearMarketDuties: (houseId: string) => request<any>(`/houses/${houseId}/market/duties/clear`, { method: "DELETE" }),
   getMarketExpenses: (houseId: string) => request<any[]>(`/houses/${houseId}/market/expenses`),
   submitMarketExpense: (houseId: string, data: any) => request<any>(`/houses/${houseId}/market/expenses`, { method: "POST", body: JSON.stringify(data) }),
   approveMarketExpense: (houseId: string, id: string) => request<any>(`/houses/${houseId}/market/expenses/${id}/approve`, { method: "PATCH" }),
@@ -66,6 +72,7 @@ export const api = {
   getWallets: (houseId: string) => request<any[]>(`/houses/${houseId}/finance/wallets`),
   addPayment: (houseId: string, data: any) => request<any>(`/houses/${houseId}/finance/payments`, { method: "POST", body: JSON.stringify(data) }),
   approvePayment: (houseId: string, id: string) => request<any>(`/houses/${houseId}/finance/payments/${id}/approve`, { method: "PATCH" }),
+  rejectPayment: (houseId: string, id: string) => request<any>(`/houses/${houseId}/finance/payments/${id}/reject`, { method: "PATCH" }),
   getFines: (houseId: string) => request<any[]>(`/houses/${houseId}/finance/fines`),
   applyFine: (houseId: string, data: any) => request<any>(`/houses/${houseId}/finance/fines`, { method: "POST", body: JSON.stringify(data) }),
 

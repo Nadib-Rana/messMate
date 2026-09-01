@@ -1,11 +1,23 @@
-import { TrendingUp, TrendingDown, Wallet, Utensils, Calendar, Bell } from "lucide-react";
-import { Card, Badge, fmt } from "../components/ui";
+import { useState } from "react";
+import { Wallet, Plus } from "lucide-react";
+import { Card, Badge, fmt, Btn } from "../components/ui";
 import { useApp } from "../context/AppContext";
+import { MemberDepositModal } from "./components/MemberDepositModal";
+import { MemberDutyOverview } from "./components/MemberDutyOverview";
 
 export default function MemberDashboard() {
-  const { memberSettlements, mealRate, marketDuties, notifications, currentHouse, members } = useApp();
+  const { memberSettlements, mealRate, marketDuties, currentHouse, members, walletPayments, addPayment, currentMember } = useApp();
 
-  const meMember = members[0]; // Logged in user
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositDate, setDepositDate] = useState(new Date().toISOString().split("T")[0]);
+  const [depositMethod, setDepositMethod] = useState<any>("bKash");
+  const [depositReference, setDepositReference] = useState("");
+  const [depositNote, setDepositNote] = useState("");
+  const [depositError, setDepositError] = useState("");
+  const [depositSuccess, setDepositSuccess] = useState(false);
+
+  const meMember = (currentMember && currentMember.role === "member") ? currentMember : (members.find(m => m.role === "member") || members[0]);
   const meSettlement = memberSettlements.find(s => s.memberId === meMember.id) || memberSettlements[0];
 
   const myMeals = meSettlement?.meals || 0;
@@ -16,162 +28,70 @@ export default function MemberDashboard() {
   const totalResp = meSettlement?.totalResponsibility || 0;
   const paid = meSettlement?.paid || 0;
   const balance = meSettlement?.balance || 0;
-  const isPositive = balance >= 0;
 
-  const myDuty = marketDuties.find(d => d.memberId === meMember.id);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const myDuty = marketDuties.find(d => d.memberId === meMember.id && ((d.startDate && d.endDate && todayStr >= d.startDate && todayStr <= d.endDate) || d.status === "current")) || marketDuties.find(d => d.memberId === meMember.id);
+  const myPayments = walletPayments.filter(p => p.memberId === meMember.id);
+
+  const handleDepositSubmit = () => {
+    const amt = parseFloat(depositAmount);
+    if (!amt || amt <= 0) { setDepositError("Please enter a valid deposit amount."); return; }
+    if (!depositDate) { setDepositError("Please select a date."); return; }
+    addPayment({ memberId: meMember.id, amount: amt, date: depositDate, method: depositMethod, reference: depositReference, note: depositNote });
+    setDepositSuccess(true);
+    setTimeout(() => { setShowDepositModal(false); setDepositSuccess(false); setDepositAmount(""); setDepositReference(""); setDepositNote(""); setDepositError(""); }, 1000);
+  };
 
   return (
     <div className="space-y-5">
-      {/* Welcome */}
       <div className="p-5 bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-8 -right-8 w-40 h-40 bg-white rounded-full" />
-          <div className="absolute -bottom-12 -left-4 w-32 h-32 bg-white rounded-full" />
-        </div>
-        <div className="relative">
-          <p className="text-indigo-200 text-sm">Good afternoon,</p>
-          <h2 className="text-2xl font-bold mt-0.5" style={{ fontFamily: "var(--font-display)" }}>{meMember.name}</h2>
-          <p className="text-indigo-200 text-xs mt-1">Manager · {currentHouse.name} · August 2026</p>
-        </div>
+        <p className="text-indigo-200 text-sm">Good afternoon,</p>
+        <h2 className="text-2xl font-bold mt-0.5" style={{ fontFamily: "var(--font-display)" }}>{meMember.name}</h2>
+        <p className="text-indigo-200 text-xs mt-1">{meMember.role === "manager" ? "Manager" : "Member"} · {currentHouse.name}</p>
       </div>
 
-      {/* Wallet card */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Wallet size={16} className="text-indigo-500" />
-              My Wallet
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Wallet size={16} className="text-indigo-500" /> My Wallet</div>
+            <div className="flex items-center gap-2">
+              <Badge variant={balance >= currentHouse.setting.lowWalletThreshold ? "success" : "danger"}>{balance >= currentHouse.setting.lowWalletThreshold ? "Good" : "Low"}</Badge>
+              <Btn size="sm" onClick={() => { setDepositError(""); setShowDepositModal(true); }}><Plus size={12} /> Add Deposit</Btn>
             </div>
-            <Badge variant={balance >= currentHouse.setting.lowWalletThreshold ? "success" : "danger"}>
-              {balance >= currentHouse.setting.lowWalletThreshold ? "Good" : "Low"}
-            </Badge>
           </div>
           <p className="text-4xl font-bold text-slate-900" style={{ fontFamily: "var(--font-display)" }}>{fmt(balance)}</p>
           <p className="text-xs text-slate-500 mt-1">Available balance</p>
           <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2.5 bg-emerald-50 rounded-lg">
-              <p className="text-emerald-600 font-medium">Total Deposited</p>
-              <p className="font-bold text-slate-800 mt-0.5" style={{ fontFamily: "var(--font-display)" }}>{fmt(paid)}</p>
-            </div>
-            <div className="p-2.5 bg-slate-50 rounded-lg">
-              <p className="text-slate-500 font-medium">Spent / Allocated</p>
-              <p className="font-bold text-slate-800 mt-0.5" style={{ fontFamily: "var(--font-display)" }}>{fmt(totalResp)}</p>
-            </div>
+            <div className="p-2.5 bg-emerald-50 rounded-lg"><p className="text-emerald-600 font-medium">Total Deposited</p><p className="font-bold text-slate-800 mt-0.5">{fmt(paid)}</p></div>
+            <div className="p-2.5 bg-slate-50 rounded-lg"><p className="text-slate-500 font-medium">Spent / Allocated</p><p className="font-bold text-slate-800 mt-0.5">{fmt(totalResp)}</p></div>
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-            <Utensils size={16} className="text-indigo-500" />
-            My Meals — August 2026
-          </div>
-          <p className="text-4xl font-bold text-slate-900" style={{ fontFamily: "var(--font-display)" }}>{myMeals}</p>
-          <p className="text-xs text-slate-500 mt-1">Total meal count (weighted)</p>
-          <div className="mt-4 text-xs space-y-1.5">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Meal Rate</span>
-              <span className="font-semibold text-slate-800">৳{mealRate} / meal</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">My Meal Cost</span>
-              <span className="font-semibold text-slate-800">{fmt(mealCost)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Meal plan</span>
-              <Badge variant="info">{meMember.mealPlan}</Badge>
-            </div>
-          </div>
-        </Card>
+        <MemberDutyOverview myMeals={myMeals} mealRate={mealRate} mealCost={mealCost} otherShare={otherShare} fines={fines} guestMealCost={guestMealCost} myDuty={myDuty} />
       </div>
 
-      {/* Current responsibility */}
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4">Current Month Responsibility</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">My Meal Cost</span>
-              <span className="text-sm font-semibold text-slate-800 font-mono">{fmt(mealCost)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Other Share (Bills)</span>
-              <span className="text-sm font-semibold text-slate-800 font-mono">{fmt(otherShare)}</span>
-            </div>
-            {guestMealCost > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                <span className="text-sm text-slate-600">Guest Meals Cost</span>
-                <span className="text-sm font-semibold text-slate-800 font-mono">{fmt(guestMealCost)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Fines</span>
-              <span className="text-sm font-semibold text-slate-800 font-mono">{fmt(fines)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-sm font-bold text-slate-900">Total Responsibility</span>
-              <span className="text-sm font-bold text-slate-900 font-mono">{fmt(totalResp)}</span>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Total Paid</span>
-              <span className="text-sm font-semibold text-emerald-600 font-mono">{fmt(paid)}</span>
-            </div>
-            <div className="p-4 rounded-xl mt-2 text-center" style={{ backgroundColor: isPositive ? "#f0fdf4" : "#fff1f2" }}>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                {isPositive ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-red-500" />}
-                <p className="text-xs font-medium" style={{ color: isPositive ? "#059669" : "#e11d48" }}>
-                  {isPositive ? "Estimated to Receive" : "Estimated to Pay"}
-                </p>
-              </div>
-              <p className="text-3xl font-bold" style={{ fontFamily: "var(--font-display)", color: isPositive ? "#047857" : "#be123c" }}>
-                {isPositive ? "+" : "-"}{fmt(Math.abs(balance))}
-              </p>
-              <p className="text-xs mt-2 text-slate-500">This is a live estimate. Final settlement at month end.</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Bottom row */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        {/* Market duty */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-            <Calendar size={16} className="text-indigo-500" />
-            My Market Duty
-          </div>
-          {myDuty ? (
-            <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-              <p className="text-xs font-medium text-indigo-600">{myDuty.status === "current" ? "On Duty Now" : "Upcoming Duty"}</p>
-              <p className="text-lg font-bold text-slate-900 mt-0.5" style={{ fontFamily: "var(--font-display)" }}>{myDuty.startDate} – {myDuty.endDate}</p>
-              <Badge variant={myDuty.status === "current" ? "warning" : "info"}>{myDuty.status}</Badge>
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">No upcoming duty</p>
-          )}
-        </Card>
-
-        {/* Recent notifications */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-            <Bell size={16} className="text-indigo-500" />
-            Notifications
-          </div>
+        <h3 className="text-sm font-semibold text-slate-700 mb-3">My Deposit History</h3>
+        {myPayments.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-4">No deposits submitted yet</p>
+        ) : (
           <div className="space-y-2">
-            {notifications.filter(n => !n.read).map(n => (
-              <div key={n.id} className="flex items-start gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-semibold text-slate-800">{n.title}</p>
-                  <p className="text-xs text-slate-500 line-clamp-1">{n.message}</p>
-                </div>
+            {myPayments.map(p => (
+              <div key={p.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                <div><p className="text-xs font-bold text-slate-800">{fmt(p.amount)}</p><p className="text-[11px] text-slate-400">{p.date} · via {p.method}</p></div>
+                <Badge variant={p.status === "approved" ? "success" : p.status === "rejected" ? "danger" : "warning"}>{p.status}</Badge>
               </div>
             ))}
           </div>
-        </Card>
-      </div>
+        )}
+      </Card>
+
+      <MemberDepositModal
+        open={showDepositModal} onClose={() => setShowDepositModal(false)} depositAmount={depositAmount} setDepositAmount={setDepositAmount}
+        depositDate={depositDate} setDepositDate={setDepositDate} depositMethod={depositMethod} setDepositMethod={setDepositMethod}
+        depositReference={depositReference} setDepositReference={setDepositReference} depositNote={depositNote} setDepositNote={setDepositNote}
+        depositError={depositError} depositSuccess={depositSuccess} onSubmit={handleDepositSubmit}
+      />
     </div>
   );
 }

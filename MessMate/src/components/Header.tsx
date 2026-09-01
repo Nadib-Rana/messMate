@@ -26,13 +26,13 @@ const PAGE_LABELS: Record<string, string> = {
 interface Props {
   onMenuClick: () => void;
   role: UserRole;
-  onRoleChange: (r: UserRole) => void;
+  onRoleChange?: (r: UserRole) => void;
   currentPage: Page;
   onNavigate: (p: Page) => void;
 }
 
 export default function Header({ onMenuClick, role, onRoleChange, currentPage, onNavigate }: Props) {
-  const { currentHouse, houses, switchHouse, notifications } = useApp();
+  const { currentHouse, houses, switchHouse, notifications, currentMember } = useApp();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -81,21 +81,6 @@ export default function Header({ onMenuClick, role, onRoleChange, currentPage, o
         )}
       </div>
 
-      {/* Demo role toggle */}
-      <div className="flex items-center bg-slate-100 rounded-lg p-0.5 gap-0.5">
-        <button
-          onClick={() => onRoleChange("manager")}
-          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${role === "manager" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
-        >
-          Manager
-        </button>
-        <button
-          onClick={() => onRoleChange("member")}
-          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${role === "member" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
-        >
-          Member
-        </button>
-      </div>
 
       <button onClick={() => onNavigate("notifications")} className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
         <Bell size={17} />
@@ -104,7 +89,15 @@ export default function Header({ onMenuClick, role, onRoleChange, currentPage, o
         )}
       </button>
 
-      <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer">NH</div>
+      <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+        <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+          {currentMember?.avatar || currentMember?.name?.slice(0, 2).toUpperCase() || "MM"}
+        </div>
+        <div className="hidden sm:block text-left leading-tight">
+          <p className="text-xs font-bold text-slate-800">{currentMember?.name || "Member"}</p>
+          <p className="text-[10px] text-slate-400 capitalize">{role}</p>
+        </div>
+      </div>
     </header>
   );
 }

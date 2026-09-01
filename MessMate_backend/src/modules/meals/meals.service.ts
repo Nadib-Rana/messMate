@@ -1,50 +1,58 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
+import { MealsRequestsService } from "./meals_requests.service";
 
 @Injectable()
 export class MealsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reqService: MealsRequestsService,
+  ) {}
+
+  private async resolveHouseId(houseId: string): Promise<string | null> {
+    return this.reqService.resolveHouseId(houseId);
+  }
+
+  private async resolveMemberId(memberId: string, houseId: string): Promise<string | null> {
+    return this.reqService.resolveMemberId(memberId, houseId);
+  }
 
   async getDailyMeals(houseId: string, date?: string) {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return [];
+
     const records = await this.prisma.dailyMealRecord.findMany({
-      where: {
-        houseId,
-        ...(date ? { date: new Date(date) } : {}),
-      },
-      include: {
-        member: {
-          include: {
-            user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-          },
-        },
-      },
+      where: { houseId: targetHouseId, ...(date ? { date: new Date(date) } : {}) },
+      include: { member: { include: { user: { select: { id: true, firstName: true, lastName: true } } } } },
       orderBy: { date: "desc" },
     });
 
-    return records.map(r => ({
-      id: r.id,
-      houseId: r.houseId,
-      memberId: r.memberId,
-      memberName: r.member.user ? `${r.member.user.firstName || ''} ${r.member.user.lastName || ''}`.trim() : 'Member',
-      date: r.date.toISOString().split("T")[0],
-      breakfast: r.breakfast,
-      lunch: r.lunch,
-      dinner: r.dinner,
-      weightedCount: Number(r.weightedCount),
-      isOverride: r.isOverride,
+    const map = new Map<string, any[]>();
+    for (const r of records) {
+      const dateStr = r.date.toISOString().split("T")[0];
+      if (!map.has(dateStr)) map.set(dateStr, []);
+      map.get(dateStr)!.push({ id: r.memberId, breakfast: r.breakfast, lunch: r.lunch, dinner: r.dinner, isOverride: r.isOverride });
+    }
+
+    return Array.from(map.entries()).map(([dateStr, dayMembers]) => ({
+      date: dateStr,
+      day: new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short" }),
+      members: dayMembers,
     }));
   }
 
   async toggleMeal(data: { houseId: string; memberId: string; date: string; breakfast?: boolean; lunch?: boolean; dinner?: boolean }) {
-    const recordDate = new Date(data.date);
+    const targetHouseId = (await this.resolveHouseId(data.houseId)) || data.houseId;
+    const targetMemberId = (await this.resolveMemberId(data.memberId, targetHouseId)) || data.memberId;
+    const recordDate = new Date(data.date + "T12:00:00Z");
+
     const existing = await this.prisma.dailyMealRecord.findFirst({
-      where: { memberId: data.memberId, date: recordDate },
+      where: { memberId: targetMemberId, date: recordDate },
     });
 
-    const b = data.breakfast !== undefined ? data.breakfast : existing?.breakfast ?? true;
-    const l = data.lunch !== undefined ? data.lunch : existing?.lunch ?? true;
-    const d = data.dinner !== undefined ? data.dinner : existing?.dinner ?? true;
-
+    const b = data.breakfast !== undefined ? data.breakfast : (existing ? !existing.breakfast : true);
+    const l = data.lunch     !== undefined ? data.lunch     : (existing ? !existing.lunch     : true);
+    const d = data.dinner    !== undefined ? data.dinner    : (existing ? !existing.dinner    : true);
     const weightedCount = (b ? 0.5 : 0) + (l ? 1.0 : 0) + (d ? 1.0 : 0);
 
     if (existing) {
@@ -55,110 +63,37 @@ export class MealsService {
     }
 
     return this.prisma.dailyMealRecord.create({
-      data: {
-        houseId: data.houseId,
-        memberId: data.memberId,
-        date: recordDate,
-        breakfast: b,
-        lunch: l,
-        dinner: d,
-        weightedCount,
-        isOverride: true,
-      },
+      data: { houseId: targetHouseId, memberId: targetMemberId, date: recordDate, breakfast: b, lunch: l, dinner: d, weightedCount, isOverride: true },
     });
   }
 
-  async getMealStopRequests(houseId: string) {
-    const requests = await this.prisma.mealStopRequest.findMany({
-      where: { houseId },
-      include: {
-        member: {
-          include: { user: { select: { firstName: true, lastName: true, avatarUrl: true } } },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  async getWeeklySchedules(houseId: string) {
+    const targetHouseId = await this.resolveHouseId(houseId);
+    if (!targetHouseId) return [];
+    return this.prisma.weeklySchedule.findMany({ where: { member: { houseId: targetHouseId } } });
+  }
 
-    return requests.map(r => {
-      const memberName = r.member.user ? `${r.member.user.firstName || ''} ${r.member.user.lastName || ''}`.trim() : 'Member';
-      const avatar = memberName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-      return {
-        id: r.id,
-        houseId: r.houseId,
-        memberId: r.memberId,
-        memberName,
-        avatar,
-        startDate: r.startDate.toISOString().split("T")[0],
-        endDate: r.endDate.toISOString().split("T")[0],
-        reason: r.reason,
-        status: r.status.toLowerCase(),
-        submittedAt: r.createdAt.toISOString().split("T")[0],
-      };
+  async updateWeeklySchedule(data: { houseId: string; memberId: string; dayOfWeek: string | number; breakfast?: boolean; lunch?: boolean; dinner?: boolean }) {
+    const targetHouseId = (await this.resolveHouseId(data.houseId)) || data.houseId;
+    const targetMemberId = (await this.resolveMemberId(data.memberId, targetHouseId)) || data.memberId;
+    const dayInt = typeof data.dayOfWeek === "number" ? data.dayOfWeek : (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(data.dayOfWeek) >= 0 ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(data.dayOfWeek) : 0);
+    const existing = await this.prisma.weeklySchedule.findFirst({
+      where: { memberId: targetMemberId, dayOfWeek: dayInt },
+    });
+    if (existing) {
+      return this.prisma.weeklySchedule.update({
+        where: { id: existing.id },
+        data: { ...(data.breakfast !== undefined && { breakfast: data.breakfast }), ...(data.lunch !== undefined && { lunch: data.lunch }), ...(data.dinner !== undefined && { dinner: data.dinner }) },
+      });
+    }
+    return this.prisma.weeklySchedule.create({
+      data: { houseId: targetHouseId, memberId: targetMemberId, dayOfWeek: dayInt, breakfast: data.breakfast ?? true, lunch: data.lunch ?? true, dinner: data.dinner ?? true },
     });
   }
 
-  async submitMealStopRequest(data: { houseId: string; memberId: string; startDate: string; endDate: string; reason: string }) {
-    return this.prisma.mealStopRequest.create({
-      data: {
-        houseId: data.houseId,
-        memberId: data.memberId,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        reason: data.reason,
-        status: "PENDING",
-      },
-    });
-  }
-
-  async updateMealStopStatus(id: string, status: "APPROVED" | "REJECTED") {
-    return this.prisma.mealStopRequest.update({
-      where: { id },
-      data: { status },
-    });
-  }
-
-  async getGuestMeals(houseId: string) {
-    const guests = await this.prisma.guestMeal.findMany({
-      where: { houseId },
-      include: {
-        hostMember: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-      },
-    });
-
-    return guests.map(g => ({
-      id: g.id,
-      houseId: g.houseId,
-      guestName: g.guestName,
-      hostId: g.hostMemberId,
-      hostName: g.hostMember.user ? `${g.hostMember.user.firstName || ''} ${g.hostMember.user.lastName || ''}`.trim() : 'Host',
-      startDate: g.startDate.toISOString().split("T")[0],
-      endDate: g.endDate.toISOString().split("T")[0],
-      meals: { breakfast: g.breakfast, lunch: g.lunch, dinner: g.dinner },
-      totalMeals: Number(g.totalMeals),
-      cost: Number(g.cost),
-      status: g.status.toLowerCase(),
-    }));
-  }
-
-  async addGuestMeal(data: { houseId: string; hostMemberId: string; guestName: string; startDate: string; endDate: string; meals: { breakfast: boolean; lunch: boolean; dinner: boolean } }) {
-    const mealCount = (data.meals.breakfast ? 0.5 : 0) + (data.meals.lunch ? 1.0 : 0) + (data.meals.dinner ? 1.0 : 0);
-    const estimatedCost = mealCount * 42.5;
-
-    return this.prisma.guestMeal.create({
-      data: {
-        houseId: data.houseId,
-        hostMemberId: data.hostMemberId,
-        guestName: data.guestName,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        breakfast: data.meals.breakfast,
-        lunch: data.meals.lunch,
-        dinner: data.meals.dinner,
-        totalMeals: mealCount,
-        cost: estimatedCost,
-      },
-    });
-  }
+  getMealStopRequests(houseId: string) { return this.reqService.getMealStopRequests(houseId); }
+  submitMealStopRequest(data: any) { return this.reqService.submitMealStopRequest(data); }
+  updateMealStopStatus(id: string, status: "APPROVED" | "REJECTED") { return this.reqService.updateMealStopStatus(id, status); }
+  getGuestMeals(houseId: string) { return this.reqService.getGuestMeals(houseId); }
+  addGuestMeal(data: any) { return this.reqService.addGuestMeal(data); }
 }

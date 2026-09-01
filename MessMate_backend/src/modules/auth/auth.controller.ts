@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  UseGuards,
-  Req,
-  HttpCode,
-  HttpStatus,
-} from "@nestjs/common";
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiResponse,
-} from "@nestjs/swagger";
+import { Controller, Post, Body, Get, UseGuards, Req, HttpCode, HttpStatus } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { Request } from "express";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
@@ -41,8 +27,6 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post("register")
-  @ApiOperation({ summary: "Register a new user account" })
-  @ApiResponse({ status: 201, description: "User registered successfully" })
   @ResponseMessage("Account registered successfully")
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -52,19 +36,15 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Login with email/username and password" })
-  @ApiResponse({ status: 200, description: "User authenticated successfully" })
   @ResponseMessage("Login successful")
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.get("user-agent");
-    return this.authService.login(dto, ipAddress, userAgent);
+    return this.authService.login(dto, ipAddress);
   }
 
   @Public()
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Refresh access token using refresh token" })
   @ResponseMessage("Token refreshed successfully")
   async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
     const ipAddress = req.ip || req.socket.remoteAddress;
@@ -75,7 +55,6 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post("verify-email")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Verify email with 6-digit OTP" })
   @ResponseMessage("Email verified successfully")
   async verifyEmail(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyEmailOtp(dto.email, dto.code);
@@ -85,7 +64,6 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post("resend-otp")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Resend email verification OTP" })
   @ResponseMessage("Verification OTP sent")
   async resendOtp(@Body() dto: ResendOtpDto) {
     return this.authService.resendVerificationOtp(dto.email);
@@ -95,7 +73,6 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Request a password reset code via email" })
   @ResponseMessage("Password reset instructions sent")
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
@@ -105,7 +82,6 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post("reset-password")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Reset password using OTP code" })
   @ResponseMessage("Password reset successfully")
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
@@ -113,7 +89,6 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Get("me")
-  @ApiOperation({ summary: "Get current authenticated user profile" })
   @ResponseMessage("User profile retrieved")
   async getProfile(@CurrentUser("id") userId: string) {
     return this.authService.getProfile(userId);
@@ -122,19 +97,14 @@ export class AuthController {
   @ApiBearerAuth()
   @Post("change-password")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Change current password (Authenticated)" })
   @ResponseMessage("Password updated successfully")
-  async changePassword(
-    @CurrentUser("id") userId: string,
-    @Body() dto: ChangePasswordDto,
-  ) {
+  async changePassword(@CurrentUser("id") userId: string, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(userId, dto);
   }
 
   @ApiBearerAuth()
   @Post("logout")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Logout and revoke active session" })
   @ResponseMessage("Logged out successfully")
   async logout(@CurrentUser("id") userId: string) {
     return this.authService.logout(userId);

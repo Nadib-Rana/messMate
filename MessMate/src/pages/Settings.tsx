@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { PageHeader, Card, Btn, Input, Select, Tabs } from "../components/ui";
+import { PageHeader, Card, Btn, Input, Tabs } from "../components/ui";
 import { useApp } from "../context/AppContext";
+import { SettingsMealTab } from "./components/SettingsMealTab";
+import { SettingsDutyAndFines } from "./components/SettingsOtherTabs";
 
 const TABS = ["House", "Meals", "Market Duty", "Fines", "Notifications"];
 
 export default function Settings() {
-  const { currentHouse, updateSettings, members } = useApp();
+  const { currentHouse, updateSettings } = useApp();
   const [activeTab, setActiveTab] = useState("House");
 
   const [mealWeights, setMealWeights] = useState({
@@ -17,6 +19,11 @@ export default function Settings() {
   const [guestMealRule, setGuestMealRule] = useState<any>(currentHouse.setting.guestMealRule);
   const [dutyDuration, setDutyDuration] = useState(currentHouse.setting.dutyDurationDays.toString());
   const [savedMsg, setSavedMsg] = useState(false);
+
+  const triggerSaved = () => {
+    setSavedMsg(true);
+    setTimeout(() => setSavedMsg(false), 2000);
+  };
 
   const handleSaveWeights = () => {
     updateSettings({
@@ -30,9 +37,7 @@ export default function Settings() {
   };
 
   const handleSaveThreshold = () => {
-    updateSettings({
-      lowWalletThreshold: parseFloat(walletThreshold) || 500,
-    });
+    updateSettings({ lowWalletThreshold: parseFloat(walletThreshold) || 500 });
     triggerSaved();
   };
 
@@ -44,11 +49,6 @@ export default function Settings() {
   const handleSaveDutyDuration = () => {
     updateSettings({ dutyDurationDays: parseInt(dutyDuration) || 3 });
     triggerSaved();
-  };
-
-  const triggerSaved = () => {
-    setSavedMsg(true);
-    setTimeout(() => setSavedMsg(false), 2000);
   };
 
   return (
@@ -100,126 +100,27 @@ export default function Settings() {
               </div>
             </div>
           </Card>
-
-          <Card className="p-5 border-red-100">
-            <h3 className="text-sm font-semibold text-red-700 mb-2">Danger Zone</h3>
-            <p className="text-xs text-slate-500 mb-4">These actions cannot be undone easily.</p>
-            <div className="flex gap-3">
-              <Btn variant="danger" size="sm">Delete House</Btn>
-              <Btn variant="secondary" size="sm">Transfer Manager</Btn>
-            </div>
-          </Card>
         </div>
       )}
 
       {activeTab === "Meals" && (
-        <div className="space-y-4 max-w-xl">
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Meal Weights</h3>
-            <p className="text-xs text-slate-500 mb-4">Configure fractional meal values for rate calculation.</p>
-            <div className="space-y-3">
-              {(["breakfast", "lunch", "dinner"] as const).map(meal => (
-                <div key={meal} className="flex items-center gap-4">
-                  <label className="text-sm font-medium text-slate-700 capitalize w-24">{meal}</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    max="2"
-                    value={mealWeights[meal]}
-                    onChange={e => setMealWeights(w => ({ ...w, [meal]: e.target.value }))}
-                    className="w-24 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-xs text-slate-400">meals</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700">
-              Full day (B+L+D) = {(parseFloat(mealWeights.breakfast || "0.5") + parseFloat(mealWeights.lunch || "1") + parseFloat(mealWeights.dinner || "1")).toFixed(1)} meals
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Btn onClick={handleSaveWeights}>Save Meal Weights</Btn>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Guest Meal Rule</h3>
-            <Select label="Default guest meal cost goes to" options={["Host Pays", "House Pays", "Custom"]} value={guestMealRule} onChange={setGuestMealRule} />
-            <div className="mt-4 flex justify-end">
-              <Btn onClick={handleSaveGuestRule}>Save Rule</Btn>
-            </div>
-          </Card>
-        </div>
+        <SettingsMealTab
+          mealWeights={mealWeights}
+          setMealWeights={setMealWeights}
+          guestMealRule={guestMealRule}
+          setGuestMealRule={setGuestMealRule}
+          onSaveWeights={handleSaveWeights}
+          onSaveGuestRule={handleSaveGuestRule}
+        />
       )}
 
-      {activeTab === "Market Duty" && (
-        <div className="space-y-4 max-w-xl">
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Rotation Settings</h3>
-            <div className="space-y-4">
-              <Select label="Rotation Mode" options={["Auto-rotate by days", "Manual Assignment", "Fixed schedule"]} />
-              <Input label="Duty Duration (days)" value={dutyDuration} onChange={setDutyDuration} />
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-2">Rotation Order</label>
-                <div className="space-y-1.5">
-                  {members.map((m, i) => (
-                    <div key={m.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
-                      <span className="text-xs font-mono text-slate-400 w-4">{i + 1}.</span>
-                      <span className="text-sm text-slate-700 flex-1">{m.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Btn onClick={handleSaveDutyDuration}>Save Rotation Settings</Btn>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === "Fines" && (
-        <div className="space-y-4 max-w-xl">
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Fine Rules</h3>
-            <div className="space-y-4">
-              <Select label="Fine money allocated to" options={["House fund", "Shared equally"]} />
-              <div className="flex justify-end">
-                <Btn onClick={triggerSaved}>Save Rules</Btn>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === "Notifications" && (
-        <div className="space-y-4 max-w-xl">
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Notification Preferences</h3>
-            <div className="space-y-3">
-              {[
-                "Low wallet balance alert",
-                "Meal stop request submitted",
-                "Meal stop approved / rejected",
-                "Market duty assigned",
-                "Market expense submitted",
-                "Payment approved / rejected",
-                "Fine applied",
-                "Monthly settlement ready",
-                "Manager announcements",
-              ].map(item => (
-                <label key={item} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                  <span className="text-sm text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Btn onClick={triggerSaved}>Save Preferences</Btn>
-            </div>
-          </Card>
-        </div>
-      )}
+      <SettingsDutyAndFines
+        activeTab={activeTab}
+        dutyDuration={dutyDuration}
+        setDutyDuration={setDutyDuration}
+        onSaveDutyDuration={handleSaveDutyDuration}
+        triggerSaved={triggerSaved}
+      />
     </div>
   );
 }

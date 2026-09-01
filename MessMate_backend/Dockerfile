@@ -18,7 +18,7 @@ RUN npm ci
 COPY . .
 
 # Dummy DATABASE_URL for Prisma generate build step
-ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nest_starter_db?schema=public"
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/messmate_db?schema=public"
 
 # Generate Prisma Client and compile TypeScript
 RUN npx prisma generate
