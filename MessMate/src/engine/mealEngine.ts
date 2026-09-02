@@ -13,18 +13,39 @@ export function calculateDailyMealWeight(
   return Math.round(count * 100) / 100;
 }
 
+export function getMemberApprovedMealStopSlots(
+  memberId: string,
+  dateStr: string,
+  mealStops: MealStopRequest[]
+): { breakfastOff: boolean; lunchOff: boolean; dinnerOff: boolean; isOnStop: boolean } {
+  const targetDate = dateStr.slice(0, 10);
+  let breakfastOff = false;
+  let lunchOff = false;
+  let dinnerOff = false;
+
+  for (const stop of mealStops) {
+    if (stop.memberId !== memberId || stop.status !== "approved") continue;
+    const startStr = (stop.startDate || "").slice(0, 10);
+    const endStr = (stop.endDate || "").slice(0, 10);
+    const b = stop.meals?.breakfast ?? (stop as any).breakfast ?? true;
+    const l = stop.meals?.lunch ?? (stop as any).lunch ?? true;
+    const d = stop.meals?.dinner ?? (stop as any).dinner ?? true;
+    if (targetDate >= startStr && targetDate <= endStr) {
+      if (b) breakfastOff = true;
+      if (l) lunchOff = true;
+      if (d) dinnerOff = true;
+    }
+  }
+
+  return { breakfastOff, lunchOff, dinnerOff, isOnStop: breakfastOff || lunchOff || dinnerOff };
+}
+
 export function isMemberOnApprovedMealStop(
   memberId: string,
   dateStr: string,
   mealStops: MealStopRequest[]
 ): boolean {
-  const date = new Date(dateStr);
-  return mealStops.some(stop => {
-    if (stop.memberId !== memberId || stop.status !== "approved") return false;
-    const start = new Date(stop.startDate);
-    const end = new Date(stop.endDate);
-    return date >= start && date <= end;
-  });
+  return getMemberApprovedMealStopSlots(memberId, dateStr, mealStops).isOnStop;
 }
 
 export function calculateTotalFoodExpense(marketExpenses: MarketExpense[]): number {

@@ -69,7 +69,7 @@ export function DailyMealTable({
                     const member = members.find(m => m.id === dm.id);
                     if (!member) return null;
                     const meals = calculateDailyMealWeight(dm.breakfast, dm.lunch, dm.dinner, mealWeights);
-                    const canToggle = isManager && isToday;
+                    const canToggle = isManager;
                     const handleMealClick = () => {
                       if (canToggle) {
                         toggleDailyMeal(dm.id, "breakfast", day.date);

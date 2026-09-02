@@ -139,6 +139,12 @@ This document maintains a continuous record of features, architecture updates, b
 - **Search & CSV Export**: Added a real-time member name search input (`Search member name...`) and a 1-click `Export Summary` button to download `Meal_Summary_[Month].csv`.
 - **Logged-in User Badge**: Added a prominent `(You)` badge on the logged-in user's row in the table for quick self-identification.
 
+#### 23. Meal Engine Audit & Production Fixes Execution
+- **Dynamic House Meal Weights in Backend**: Updated `toggleMeal` in [meals.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/meals/meals.service.ts) and `addGuestMeal` in [meals_requests.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/meals/meals_requests.service.ts) to query `HouseSetting` dynamically, applying actual configured `breakfastWeight`, `lunchWeight`, and `dinnerWeight` instead of static hardcoded values.
+- **Approved Meal Stop Request Auto-Sync**: Updated `updateMealStopStatus` in [meals_requests.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/meals/meals_requests.service.ts). When a Manager approves a meal stop request, the backend automatically iterates through all dates in `[startDate, endDate]` and upserts `DailyMealRecord` rows in PostgreSQL, setting turned-off meal slots and attaching `stopRequestId`.
+- **Granular Slot-Level Meal Stop Evaluation**: Updated `getMemberApprovedMealStopSlots` in [mealEngine.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/engine/mealEngine.ts) to evaluate partial meal stops (e.g. Breakfast off, Lunch/Dinner on) with pure `YYYY-MM-DD` string matching to prevent Date timezone boundary bugs.
+- **Manager Editing Scope**: Updated `canToggle` in [DailyMealTable.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/DailyMealTable.tsx) to allow Managers to toggle meal slots on any date within an open month.
+
 ---
 
 ## 🚦 Current Health & Status
@@ -154,4 +160,5 @@ This document maintains a continuous record of features, architecture updates, b
 
 - [x] Full System Functionality Audit completed.
 - [x] CSV & PDF report export feature added.
+- [x] Meal Engine audit & production fixes executed and verified.
 - [ ] Deploy to production hosting (e.g. Vercel / Render / Docker).

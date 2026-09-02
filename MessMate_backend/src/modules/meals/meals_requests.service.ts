@@ -58,7 +58,53 @@ export class MealsRequestsService {
   }
 
   async updateMealStopStatus(requestId: string, status: "APPROVED" | "REJECTED") {
-    return this.prisma.mealStopRequest.update({ where: { id: requestId }, data: { status } });
+    const updatedRequest = await this.prisma.mealStopRequest.update({
+      where: { id: requestId },
+      data: { status },
+    });
+
+    if (status === "APPROVED" && updatedRequest) {
+      try {
+        const { houseId, memberId, startDate, endDate, breakfast, lunch, dinner } = updatedRequest;
+        const settings = await this.prisma.houseSetting.findFirst({ where: { houseId } });
+        const bw = settings ? Number(settings.breakfastWeight) : 0.5;
+        const lw = settings ? Number(settings.lunchWeight) : 1.0;
+        const dw = settings ? Number(settings.dinnerWeight) : 1.0;
+
+        const curr = new Date(startDate);
+        const end = new Date(endDate);
+
+        while (curr <= end) {
+          const recordDate = new Date(curr.toISOString().split("T")[0] + "T12:00:00Z");
+          const existing = await this.prisma.dailyMealRecord.findFirst({
+            where: { memberId, date: recordDate },
+          });
+
+          // Meal stop request specifies which slots are requested to be OFF (if breakfast=true in stop request, breakfast becomes false)
+          const newB = breakfast ? false : (existing ? existing.breakfast : true);
+          const newL = lunch ? false : (existing ? existing.lunch : true);
+          const newD = dinner ? false : (existing ? existing.dinner : true);
+          const weightedCount = (newB ? bw : 0) + (newL ? lw : 0) + (newD ? dw : 0);
+
+          if (existing) {
+            await this.prisma.dailyMealRecord.update({
+              where: { id: existing.id },
+              data: { breakfast: newB, lunch: newL, dinner: newD, weightedCount, stopRequestId: requestId, isOverride: true },
+            });
+          } else {
+            await this.prisma.dailyMealRecord.create({
+              data: { houseId, memberId, date: recordDate, breakfast: newB, lunch: newL, dinner: newD, weightedCount, stopRequestId: requestId, isOverride: true },
+            });
+          }
+
+          curr.setDate(curr.getDate() + 1);
+        }
+      } catch (err) {
+        console.error("❌ Error auto-syncing approved meal stop request to daily records:", err);
+      }
+    }
+
+    return updatedRequest;
   }
 
   async getGuestMeals(houseId: string) {
@@ -80,7 +126,13 @@ export class MealsRequestsService {
   async addGuestMeal(data: { houseId: string; hostMemberId: string; guestName: string; startDate: string; endDate: string; meals: { breakfast: boolean; lunch: boolean; dinner: boolean } }) {
     const targetHouseId = (await this.resolveHouseId(data.houseId)) || data.houseId;
     const targetHostId = (await this.resolveMemberId(data.hostMemberId, targetHouseId)) || data.hostMemberId;
-    const mealCount = (data.meals.breakfast ? 0.5 : 0) + (data.meals.lunch ? 1.0 : 0) + (data.meals.dinner ? 1.0 : 0);
+
+    const settings = await this.prisma.houseSetting.findFirst({ where: { houseId: targetHouseId } });
+    const bw = settings ? Number(settings.breakfastWeight) : 0.5;
+    const lw = settings ? Number(settings.lunchWeight) : 1.0;
+    const dw = settings ? Number(settings.dinnerWeight) : 1.0;
+
+    const mealCount = (data.meals.breakfast ? bw : 0) + (data.meals.lunch ? lw : 0) + (data.meals.dinner ? dw : 0);
     const dayCount = Math.max(1, Math.round((new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / 86400000) + 1);
 
     const [expenses, dailyRecords] = await Promise.all([

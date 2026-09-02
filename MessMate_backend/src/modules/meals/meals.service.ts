@@ -46,14 +46,19 @@ export class MealsService {
     const targetMemberId = (await this.resolveMemberId(data.memberId, targetHouseId)) || data.memberId;
     const recordDate = new Date(data.date + "T12:00:00Z");
 
-    const existing = await this.prisma.dailyMealRecord.findFirst({
-      where: { memberId: targetMemberId, date: recordDate },
-    });
+    const [existing, settings] = await Promise.all([
+      this.prisma.dailyMealRecord.findFirst({ where: { memberId: targetMemberId, date: recordDate } }),
+      this.prisma.houseSetting.findFirst({ where: { houseId: targetHouseId } }),
+    ]);
+
+    const bw = settings ? Number(settings.breakfastWeight) : 0.5;
+    const lw = settings ? Number(settings.lunchWeight) : 1.0;
+    const dw = settings ? Number(settings.dinnerWeight) : 1.0;
 
     const b = data.breakfast !== undefined ? data.breakfast : (existing ? !existing.breakfast : true);
     const l = data.lunch     !== undefined ? data.lunch     : (existing ? !existing.lunch     : true);
     const d = data.dinner    !== undefined ? data.dinner    : (existing ? !existing.dinner    : true);
-    const weightedCount = (b ? 0.5 : 0) + (l ? 1.0 : 0) + (d ? 1.0 : 0);
+    const weightedCount = (b ? bw : 0) + (l ? lw : 0) + (d ? dw : 0);
 
     if (existing) {
       return this.prisma.dailyMealRecord.update({
