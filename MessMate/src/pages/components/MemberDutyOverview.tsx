@@ -1,5 +1,5 @@
-import { Card, Badge, fmt } from "../../components/ui";
-import { Utensils, Calendar } from "lucide-react";
+import { Card, Badge, fmt, Avatar } from "../../components/ui";
+import { Utensils, Calendar, ShoppingBasket, UserCheck } from "lucide-react";
 
 export function MemberDutyOverview({
   myMeals,
@@ -9,6 +9,7 @@ export function MemberDutyOverview({
   fines,
   guestMealCost,
   myDuty,
+  todayDuty,
 }: {
   myMeals: number;
   mealRate: number;
@@ -17,6 +18,7 @@ export function MemberDutyOverview({
   fines: number;
   guestMealCost: number;
   myDuty: any;
+  todayDuty?: any;
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -43,24 +45,49 @@ export function MemberDutyOverview({
         </div>
       </Card>
 
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <Calendar size={16} className="text-indigo-500" />
-            My Market Duty
+      <Card className="p-5 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <ShoppingBasket size={16} className="text-emerald-600" />
+              Today's Market Duty
+            </div>
+            {todayDuty ? (
+              <Badge variant="success">Active</Badge>
+            ) : (
+              <Badge variant="neutral">None Today</Badge>
+            )}
           </div>
-          {myDuty && <Badge variant={myDuty.status === "current" ? "success" : "info"}>{myDuty.status}</Badge>}
+
+          {todayDuty ? (
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar initials={todayDuty.memberName ? todayDuty.memberName.slice(0, 2).toUpperCase() : "MB"} size="sm" color="bg-emerald-600" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-900 truncate">{todayDuty.memberName}</p>
+                  <p className="text-[11px] text-emerald-700 font-medium">{todayDuty.startDate} &mdash; {todayDuty.endDate}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-slate-50 rounded-xl text-center">
+              <p className="text-xs text-slate-500">No member is scheduled on duty today.</p>
+            </div>
+          )}
         </div>
-        {myDuty ? (
-          <div className="p-3 bg-slate-50 rounded-xl">
-            <p className="text-xs font-semibold text-slate-800">{myDuty.startDate} → {myDuty.endDate}</p>
-            <p className="text-[11px] text-slate-500 mt-1">{myDuty.notes || "Assigned shopping rotation period"}</p>
+
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500 font-medium flex items-center gap-1">
+              <Calendar size={12} className="text-indigo-500" /> My Next Duty:
+            </span>
+            {myDuty ? (
+              <span className="font-bold text-slate-800">{myDuty.startDate} &mdash; {myDuty.endDate}</span>
+            ) : (
+              <span className="text-slate-400 italic">Not scheduled</span>
+            )}
           </div>
-        ) : (
-          <div className="p-4 bg-slate-50 rounded-xl text-center">
-            <p className="text-xs text-slate-400">No active or upcoming market duty assigned</p>
-          </div>
-        )}
+        </div>
       </Card>
     </div>
   );

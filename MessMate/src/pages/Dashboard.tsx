@@ -3,8 +3,10 @@ import { StatCard, Card, Badge, fmt, Btn } from "../components/ui";
 import { useApp } from "../context/AppContext";
 import { DashboardDutyAndAlerts } from "./components/DashboardDutyAndAlerts";
 import { DashboardRecentActivity } from "./components/DashboardRecentActivity";
+import { MarketDutyHeroBanner } from "./components/MarketDutyHeroBanner";
+import { Page } from "../components/Sidebar";
 
-export default function Dashboard() {
+export default function Dashboard({ onNavigate }: { onNavigate?: (page: Page) => void }) {
   const {
     members,
     totalFoodExpense,
@@ -22,13 +24,23 @@ export default function Dashboard() {
   } = useApp();
 
   const isManager = currentMember?.role === "manager" || currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
-  const todayStr = new Date().toISOString().split("T")[0];
+  
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const todayStr = getTodayStr();
+
   const todayDuty = marketDuties.find(d => {
     if (d.startDate && d.endDate) {
       return todayStr >= d.startDate && todayStr <= d.endDate;
     }
     return d.status === "current";
   });
+
+  const nextDuty = marketDuties
+    .filter(d => d.startDate && d.startDate > todayStr)
+    .sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))[0];
   const lowWallet = memberSettlements.filter(s => s.balance < currentHouse.setting.lowWalletThreshold);
   const pendingExpenses = marketExpenses.filter(e => e.status === "pending");
   const pendingPayments = walletPayments.filter(p => p.status === "pending");
@@ -45,6 +57,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Top Prominent Market Duty Hero Banner */}
+      <MarketDutyHeroBanner todayDuty={todayDuty} nextDuty={nextDuty} currentMember={currentMember} onNavigate={onNavigate} />
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
         <StatCard label="Members" value={members.length.toString()} sub="7 Active" icon={<Users size={18} />} color="indigo" />
         <StatCard label="Total Meals" value={totalWeightedMeals.toLocaleString()} icon={<Utensils size={18} />} color="violet" />
@@ -132,9 +146,11 @@ export default function Dashboard() {
 
         <DashboardDutyAndAlerts
           todayDuty={todayDuty}
+          nextDuty={nextDuty}
           lowWallet={lowWallet}
           pendingExpenses={pendingExpenses}
           pendingPayments={pendingPayments}
+          currentMember={currentMember}
         />
 
         <DashboardRecentActivity marketExpenses={marketExpenses} walletPayments={walletPayments} />

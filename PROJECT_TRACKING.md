@@ -143,7 +143,50 @@ This document maintains a continuous record of features, architecture updates, b
 - **Dynamic House Meal Weights in Backend**: Updated `toggleMeal` in [meals.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/meals/meals.service.ts) and `addGuestMeal` in [meals_requests.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/meals/meals_requests.service.ts) to query `HouseSetting` dynamically, applying actual configured `breakfastWeight`, `lunchWeight`, and `dinnerWeight` instead of static hardcoded values.
 - **Approved Meal Stop Request Auto-Sync**: Updated `updateMealStopStatus` in [meals_requests.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/meals/meals_requests.service.ts). When a Manager approves a meal stop request, the backend automatically iterates through all dates in `[startDate, endDate]` and upserts `DailyMealRecord` rows in PostgreSQL, setting turned-off meal slots and attaching `stopRequestId`.
 - **Granular Slot-Level Meal Stop Evaluation**: Updated `getMemberApprovedMealStopSlots` in [mealEngine.ts](file:///home/nadib-rana/Downloads/mess/MessMate/src/engine/mealEngine.ts) to evaluate partial meal stops (e.g. Breakfast off, Lunch/Dinner on) with pure `YYYY-MM-DD` string matching to prevent Date timezone boundary bugs.
-- **Manager Editing Scope**: Updated `canToggle` in [DailyMealTable.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/meals/components/DailyMealTable.tsx) to allow Managers to toggle meal slots on any date within an open month.
+#### 25. Email Verification Bypass Configuration
+- **Disabled Mandatory OTP**: Updated registration service in [auth.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/auth/auth.service.ts) to set `isEmailVerified: true` by default for new registrations and bypass mandatory OTP email sending.
+- **DB Backfill**: Updated all existing 7 member accounts in PostgreSQL live cloud DB to `isEmailVerified: true`.
+
+#### 26. Neon PostgreSQL Cloud Database Migration
+- **Neon Cloud DB Connection**: Configured live `DATABASE_URL` in [MessMate_backend/.env](file:///home/nadib-rana/Downloads/mess/MessMate_backend/.env) pointing to Neon PostgreSQL cloud instance (`ep-polished-boat-aewzaaqf`).
+- **Prisma Schema Sync**: Executed `npx prisma db push` to generate all tables on Neon cloud database and seeded initial House ("Bashundhara Mess", Code: `HM-7777`) and 7 Member accounts.
+
+#### 27. Backend Vercel Production Deployment
+- **NestJS Serverless Handler**: Configured Vercel entry point at [api/index.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/api/index.ts) with global prefix (`api/v1`), CORS policies, validation pipes, and Swagger documentation setup.
+- **RHEL OpenSSL Prisma Target**: Added `binaryTargets = ["native", "rhel-openssl-3.0.x"]` to `schema.prisma`.
+- **Live Vercel APIs**: Deployed to Vercel Production:
+  - **Live API Endpoint**: `https://messmate-backend-omega.vercel.app/api/v1`
+  - **Swagger API Docs**: `https://messmate-backend-omega.vercel.app/docs`
+
+#### 28. Frontend Vercel Production Deployment
+- **SPA Rewrites**: Added Vercel rewrite configuration in [vercel.json](file:///home/nadib-rana/Downloads/mess/MessMate/vercel.json) to handle React Router client-side routing.
+- **Production API URL**: Connected frontend to production backend URL via `VITE_API_BASE_URL` environment variable.
+- **Live Web App**: Deployed to Vercel Production:
+  - **Live Web App**: `https://messmate-app-khaki.vercel.app`
+
+#### 29. Shared Member Login Credentials Summary
+- Provided login details for 7 members (`nadib@messmate.com`, `sumon@messmate.com`, `monna@messmate.com`, `foysan@messmate.com`, `azijul@messmate.com`, `shohan@messmate.com`, `showhan@messmate.com`, Default Password: `messmate123`, House Code: `HM-7777`).
+
+#### 31. Market Duty Database Persistence & Robust Member/User ID Resolution
+- **Root Cause Diagnosed**: When `assignMarketDuty` was called, NestJS backend `resolveMemberId` failed to resolve member UUIDs if a user UUID or non-UUID index was supplied. `prisma.marketDuty.create` threw a Foreign Key Constraint exception (`P2023` / `P2003`), causing frontend `catch` block to fallback to silent transient React local state (`id: "d1"`), which disappeared upon page reload.
+- **Robust House & Member Resolution**: Updated `resolveHouseId` and `resolveMemberId` in [market.service.ts](file:///home/nadib-rana/Downloads/mess/MessMate_backend/src/modules/market/market.service.ts). Added support for invite codes (`inviteCode: "HM-7777"`), direct `HouseMember` UUID matching, `User` UUID lookup, and fallback to member index.
+- **Strict Prisma Assignment**: Updated `assignMarketDuty` to throw descriptive exceptions if house or member cannot be resolved, preventing unhandled fallback writes.
+- **Production Backend Redeployment**: Redeployed NestJS backend to Vercel Production.
+
+#### 33. Top Full-Width Market Duty Hero Banner on Main & Member Dashboards
+- **Dual Dashboard Integration**: Created [MarketDutyHeroBanner.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/components/MarketDutyHeroBanner.tsx) and updated both [Dashboard.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/Dashboard.tsx) (Manager view) and [MemberDashboard.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/MemberDashboard.tsx) (Regular Member view) to render a prominent, full-width Hero Banner at the top of the screen.
+- **Member Overview Enhancement**: Updated [MemberDutyOverview.tsx](file:///home/nadib-rana/Downloads/mess/MessMate/src/pages/components/MemberDutyOverview.tsx) to display **Today's Active Shopper** for the entire mess alongside the member's personal next duty schedule.
+- **Instant Visual Identification**: Anyone logging into the app instantly sees who is running the market duty today, complete with member avatar, start/end dates, duty notes, animated "YOUR DUTY TODAY" badge for the logged-in user, and "Up Next" preview for the next assignee.
+- **1-Click Navigation**: Added a direct action button (**"View Duty Schedule ➔"**) navigating straight to the Market Duty schedule page (`market.duty`).
+- **Production Frontend Redeployment**: Redeployed updated frontend to Vercel Production.
+
+
+
+
+
+
+
+
 
 ---
 
@@ -151,8 +194,8 @@ This document maintains a continuous record of features, architecture updates, b
 
 | Module | Compilation Status | Build Command | Status |
 | :--- | :--- | :--- | :--- |
-| **MessMate Backend** | 🟢 Clean (0 Errors) | `npm run build` | 🚀 Production Ready |
-| **MessMate Frontend** | 🟢 Clean (0 Errors) | `npx tsc --noEmit` | 🚀 Production Ready |
+| **MessMate Backend** | 🟢 Clean (0 Errors) | `npm run build` | 🚀 Live on Vercel |
+| **MessMate Frontend** | 🟢 Clean (0 Errors) | `npm run build` | 🚀 Live on Vercel |
 
 ---
 
@@ -161,4 +204,9 @@ This document maintains a continuous record of features, architecture updates, b
 - [x] Full System Functionality Audit completed.
 - [x] CSV & PDF report export feature added.
 - [x] Meal Engine audit & production fixes executed and verified.
-- [ ] Deploy to production hosting (e.g. Vercel / Render / Docker).
+- [x] Database cleared of transactional records while keeping House & Member entities.
+- [x] Email verification requirement bypassed for instant registration.
+- [x] Live Neon PostgreSQL Cloud Database connected, schema pushed & seeded.
+- [x] Backend deployed to Vercel Production (`https://messmate-backend-omega.vercel.app`).
+- [x] Frontend deployed to Vercel Production (`https://messmate-app-khaki.vercel.app`).
+

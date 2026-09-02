@@ -4,8 +4,10 @@ import { Card, Badge, fmt, Btn } from "../components/ui";
 import { useApp } from "../context/AppContext";
 import { MemberDepositModal } from "./components/MemberDepositModal";
 import { MemberDutyOverview } from "./components/MemberDutyOverview";
+import { MarketDutyHeroBanner } from "./components/MarketDutyHeroBanner";
+import { Page } from "../components/Sidebar";
 
-export default function MemberDashboard() {
+export default function MemberDashboard({ onNavigate }: { onNavigate?: (page: Page) => void }) {
   const { memberSettlements, mealRate, marketDuties, currentHouse, members, walletPayments, addPayment, currentMember } = useApp();
 
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -29,7 +31,23 @@ export default function MemberDashboard() {
   const paid = meSettlement?.paid || 0;
   const balance = meSettlement?.balance || 0;
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const todayStr = getTodayStr();
+
+  const todayDuty = marketDuties.find(d => {
+    if (d.startDate && d.endDate) {
+      return todayStr >= d.startDate && todayStr <= d.endDate;
+    }
+    return d.status === "current";
+  });
+
+  const nextDuty = marketDuties
+    .filter(d => d.startDate && d.startDate > todayStr)
+    .sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))[0];
+
   const myDuty = marketDuties.find(d => d.memberId === meMember.id && ((d.startDate && d.endDate && todayStr >= d.startDate && todayStr <= d.endDate) || d.status === "current")) || marketDuties.find(d => d.memberId === meMember.id);
   const myPayments = walletPayments.filter(p => p.memberId === meMember.id);
 
@@ -44,6 +62,9 @@ export default function MemberDashboard() {
 
   return (
     <div className="space-y-5">
+      {/* Top Market Duty Hero Banner */}
+      <MarketDutyHeroBanner todayDuty={todayDuty} nextDuty={nextDuty} currentMember={meMember} onNavigate={onNavigate} />
+
       <div className="p-5 bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl text-white relative overflow-hidden">
         <p className="text-indigo-200 text-sm">Good afternoon,</p>
         <h2 className="text-2xl font-bold mt-0.5" style={{ fontFamily: "var(--font-display)" }}>{meMember.name}</h2>
@@ -67,7 +88,7 @@ export default function MemberDashboard() {
           </div>
         </Card>
 
-        <MemberDutyOverview myMeals={myMeals} mealRate={mealRate} mealCost={mealCost} otherShare={otherShare} fines={fines} guestMealCost={guestMealCost} myDuty={myDuty} />
+        <MemberDutyOverview myMeals={myMeals} mealRate={mealRate} mealCost={mealCost} otherShare={otherShare} fines={fines} guestMealCost={guestMealCost} myDuty={myDuty} todayDuty={todayDuty} />
       </div>
 
       <Card className="p-5">

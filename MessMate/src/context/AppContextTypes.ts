@@ -45,9 +45,9 @@ export interface AppContextType {
   addGuestMeal: (guest: Omit<GuestMeal, "id" | "houseId" | "hostName" | "totalMeals" | "cost" | "status">) => void;
 
   marketDuties: MarketDuty[];
-  assignMarketDuty: (duty: Omit<MarketDuty, "id" | "houseId" | "memberName" | "status">) => void;
+  assignMarketDuty: (duty: Omit<MarketDuty, "id" | "houseId" | "memberName" | "status">) => Promise<void>;
   deleteMarketDuty: (id: string) => void;
-  clearMarketDuties: () => void;
+  clearMarketDuties: () => Promise<void>;
 
   marketExpenses: MarketExpense[];
   submitMarketExpense: (exp: { date: string; amount: number; category: string; description: string; paidByMemberId: string; items?: MarketItem[] }) => void;

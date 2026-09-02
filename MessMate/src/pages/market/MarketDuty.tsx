@@ -14,7 +14,12 @@ export default function MarketDuty() {
 
   const isManager = currentMember?.role === "manager" || currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
 
-  const [rotationStartDate, setRotationStartDate] = useState("2026-09-01");
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const [rotationStartDate, setRotationStartDate] = useState(getTodayStr());
   const [dutyDays, setDutyDays] = useState(currentHouse.setting.dutyDurationDays.toString() || "3");
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(members.map(m => m.id));
   const [startMemberId, setStartMemberId] = useState(members[0]?.id || "");
@@ -53,7 +58,7 @@ export default function MarketDuty() {
   const startIndex = participatingMembers.findIndex(m => m.id === effectiveStartMemberId);
   const orderedMembers = startIndex >= 0 ? [...participatingMembers.slice(startIndex), ...participatingMembers.slice(0, startIndex)] : participatingMembers;
 
-  const previewRotation = generateRotationSchedule(orderedMembers.length > 0 ? orderedMembers : members, new Date(rotationStartDate || "2026-09-01"), parseInt(dutyDays) || 3, orderedMembers.length > 0 ? orderedMembers.length : members.length);
+  const previewRotation = generateRotationSchedule(orderedMembers.length > 0 ? orderedMembers : members, rotationStartDate || getTodayStr(), parseInt(dutyDays) || 3, orderedMembers.length > 0 ? orderedMembers.length : members.length);
 
   const duplicateDutiesExist = useMemo(() => {
     const seen = new Set<string>();
@@ -77,12 +82,19 @@ export default function MarketDuty() {
     toDelete.forEach(id => deleteMarketDuty(id));
   };
 
-  const handleGenerateRotation = () => {
-    if (replaceExisting) clearMarketDuties();
+  const handleGenerateRotation = async () => {
+    if (replaceExisting) {
+      await clearMarketDuties();
+    }
     updateSettings({ dutyDurationDays: parseInt(dutyDays) || 3 });
-    previewRotation.forEach(r => {
-      assignMarketDuty({ memberId: r.member.id, startDate: r.startDate, endDate: r.endDate, notes: `Auto-assigned (${dutyDays}-day fair cycle)` });
-    });
+    for (const r of previewRotation) {
+      await assignMarketDuty({
+        memberId: r.member.id,
+        startDate: r.startDate,
+        endDate: r.endDate,
+        notes: `Auto-assigned (${dutyDays}-day fair cycle)`
+      });
+    }
     setShowAutoRotationModal(false);
   };
 

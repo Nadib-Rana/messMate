@@ -34,8 +34,10 @@ export function usePaymentDutyHandlers(
     setMarketDuties(prev => prev.filter(d => d.id !== id));
   };
 
-  const clearMarketDuties = () => {
-    api.clearMarketDuties(currentHouseId).catch(() => null);
+  const clearMarketDuties = async () => {
+    try {
+      await api.clearMarketDuties(currentHouseId);
+    } catch {}
     setMarketDuties([]);
   };
 
