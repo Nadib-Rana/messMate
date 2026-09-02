@@ -6,16 +6,31 @@ export class MarketService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async resolveHouseId(houseId: string): Promise<string | null> {
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(houseId)) return houseId;
+    if (houseId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(houseId)) {
+      const existing = await this.prisma.house.findUnique({ where: { id: houseId } });
+      if (existing) return existing.id;
+    }
+    if (houseId) {
+      const houseByCode = await this.prisma.house.findFirst({ where: { inviteCode: houseId } });
+      if (houseByCode) return houseByCode.id;
+    }
     const firstHouse = await this.prisma.house.findFirst();
     return firstHouse ? firstHouse.id : null;
   }
 
   private async resolveMemberId(memberId: string, houseId: string): Promise<string | null> {
-    if (memberId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) return memberId;
     const targetHouseId = await this.resolveHouseId(houseId);
     if (!targetHouseId) return null;
+
+    if (memberId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) {
+      const byId = await this.prisma.houseMember.findFirst({ where: { id: memberId, houseId: targetHouseId } });
+      if (byId) return byId.id;
+      const byUserId = await this.prisma.houseMember.findFirst({ where: { userId: memberId, houseId: targetHouseId } });
+      if (byUserId) return byUserId.id;
+    }
+
     const members = await this.prisma.houseMember.findMany({ where: { houseId: targetHouseId }, orderBy: { joinedAt: "asc" } });
+    if (members.length === 0) return null;
     const idx = parseInt((memberId || "").replace(/\D/g, "") || "1", 10) - 1;
     return members[idx]?.id || members[0]?.id || null;
   }
@@ -44,8 +59,10 @@ export class MarketService {
   }
 
   async assignMarketDuty(data: { houseId: string; memberId: string; startDate: string; endDate: string; notes?: string }) {
-    const targetHouseId = (await this.resolveHouseId(data.houseId)) || data.houseId;
-    const targetMemberId = (await this.resolveMemberId(data.memberId, targetHouseId)) || data.memberId;
+    const targetHouseId = await this.resolveHouseId(data.houseId);
+    if (!targetHouseId) throw new Error("House not found");
+    const targetMemberId = await this.resolveMemberId(data.memberId, targetHouseId);
+    if (!targetMemberId) throw new Error("Member not found");
     return this.prisma.marketDuty.create({
       data: { houseId: targetHouseId, memberId: targetMemberId, startDate: new Date(data.startDate), endDate: new Date(data.endDate), notes: data.notes, status: "UPCOMING" },
     });

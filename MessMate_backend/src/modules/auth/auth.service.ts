@@ -46,19 +46,13 @@ export class AuthService {
         phoneNumber: dto.phoneNumber || null,
         role: Role.USER,
         status: UserStatus.ACTIVE,
-        isEmailVerified: false,
+        isEmailVerified: true,
       },
       select: { id: true, email: true, username: true, firstName: true, lastName: true, role: true, isEmailVerified: true, createdAt: true },
     });
 
-    const otp = OtpUtil.generateNumericOtp(6);
-    await this.prisma.otpToken.create({
-      data: { email: user.email, code: otp, type: OtpType.EMAIL_VERIFICATION, expiresAt: new Date(Date.now() + 10 * 60 * 1000), userId: user.id },
-    });
-
-    void this.mailService.sendEmailVerificationOtp(user.email, user.firstName || user.username || "User", otp);
     const tokens = this.tokenService.generateTokens(user);
-    return { message: "Registration successful. Please verify your email.", user, ...tokens };
+    return { message: "Registration successful.", user, ...tokens };
   }
 
   async login(dto: LoginDto, ipAddress?: string) {

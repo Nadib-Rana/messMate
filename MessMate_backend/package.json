@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "nest start --watch",
     "prebuild": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
-    "build": "nest build",
+    "build": "prisma generate && nest build",
+    "vercel-build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -26,6 +27,7 @@
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:clear": "ts-node prisma/clear_all_except_members_house.ts",
     "db:studio": "prisma studio",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
