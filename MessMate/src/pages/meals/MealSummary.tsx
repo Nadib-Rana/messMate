@@ -1,6 +1,7 @@
-import { PageHeader, Card, fmt } from "../../components/ui";
+import { useState } from "react";
+import { PageHeader, Card, Btn, fmt } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Search, Download } from "lucide-react";
 import { MealSummaryTable } from "./components/MealSummaryTable";
 
 export default function MealSummary() {
@@ -14,21 +15,50 @@ export default function MealSummary() {
     currentMember,
   } = useApp();
 
+  const [searchTerm, setSearchTerm] = useState("");
   const { mealWeights } = currentHouse.setting;
   const isManager = currentMember?.role === "manager";
 
   const now = new Date();
   const monthLabel = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const visibleSettlements = isManager
-    ? memberSettlements
-    : memberSettlements.filter(w => w.memberId === currentMember?.id);
+  // Any user (manager or member) can view all users' total meals, counts, and cost breakdown
+  const visibleSettlements = memberSettlements.filter(s =>
+    !searchTerm.trim() || s.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+  );
+
+  const handleExportCSV = () => {
+    let csv = `Meal Summary Report - ${currentHouse?.name || "Mess"}\n`;
+    csv += `Month,${monthLabel}\n`;
+    csv += `Total Food Expense,${totalFoodExpense}\n`;
+    csv += `Total Weighted Meals,${totalWeightedMeals}\n`;
+    csv += `Current Meal Rate,${mealRate}\n\n`;
+
+    csv += `Member Name,Meals,Meal Rate,Meal Cost,Other Bills Share,Total Cost Responsibility\n`;
+    memberSettlements.forEach(m => {
+      csv += `"${m.name}",${m.meals},${mealRate},${m.mealCost},${m.otherShare},${m.totalResponsibility}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Meal_Summary_${monthLabel.replace(/\s+/g, "_")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div>
       <PageHeader
         title="Meal Summary"
-        subtitle={`${monthLabel} · Live estimate`}
+        subtitle={`${monthLabel} · Live calculation for all mess members`}
+        action={
+          <Btn size="sm" variant="secondary" onClick={handleExportCSV}>
+            <Download size={14} /> Export Summary
+          </Btn>
+        }
       />
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
@@ -37,7 +67,7 @@ export default function MealSummary() {
           <p className="text-3xl font-bold text-indigo-900 mt-1.5" style={{ fontFamily: "var(--font-display)" }}>
             {fmt(totalFoodExpense)}
           </p>
-          <p className="text-xs text-indigo-600 mt-1">Market expenses only · bills excluded</p>
+          <p className="text-xs text-indigo-600 mt-1">Market food expenses only</p>
         </Card>
         <Card className="p-5 border-slate-100">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Meals</p>
@@ -62,19 +92,35 @@ export default function MealSummary() {
           <div className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">?</div>
           <div className="text-sm text-slate-600">
             <strong className="text-slate-800">How meal rate is calculated: </strong>
-            Total food/market expense is divided by total weighted meal count.
+            Total market food expense is divided by total weighted meal count across all members.
             Breakfast counts as <strong>{mealWeights.breakfast}</strong>,
             Lunch and Dinner each count as <strong>{mealWeights.lunch}</strong>.
-            Bills (rent, electricity, etc.) are excluded and shared equally among all members.
+            House bills (rent, electricity, gas, maid, etc.) are shared equally among active members.
           </div>
         </div>
       </Card>
 
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search member name..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          />
+        </div>
+        <p className="text-xs text-slate-500 font-medium">
+          Showing {visibleSettlements.length} of {memberSettlements.length} members
+        </p>
+      </div>
+
       {visibleSettlements.length === 0 ? (
         <Card className="p-12 text-center">
           <TrendingUp size={40} className="mx-auto text-slate-300 mb-3" />
-          <p className="text-sm font-semibold text-slate-500">No meal data for {monthLabel}</p>
-          <p className="text-xs text-slate-400 mt-1">Meal records will appear here once meals are logged</p>
+          <p className="text-sm font-semibold text-slate-500">No member meal records found</p>
+          <p className="text-xs text-slate-400 mt-1">Try clearing your search filter or checking meal logs</p>
         </Card>
       ) : (
         <MealSummaryTable

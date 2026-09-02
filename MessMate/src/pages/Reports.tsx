@@ -11,10 +11,37 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 }
 
 export default function Reports() {
-  const { totalFoodExpense, totalWeightedMeals, mealRate, expenses, memberSettlements } = useApp();
+  const { totalFoodExpense, totalWeightedMeals, mealRate, expenses, memberSettlements, currentHouse } = useApp();
   const currentMonthName = new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
   const maxFood = Math.max(totalFoodExpense, 1);
   const totalOtherExpense = expenses.reduce((a, e) => a + e.amount, 0);
+
+  const handleExportCSV = () => {
+    let csv = `MessMate Financial Report - ${currentHouse?.name || "Mess"}\n`;
+    csv += `Month,${currentMonthName}\n`;
+    csv += `Total Food Expense,${totalFoodExpense}\n`;
+    csv += `Total Other Bills,${totalOtherExpense}\n`;
+    csv += `Total Meals,${totalWeightedMeals}\n`;
+    csv += `Meal Rate,${mealRate}\n\n`;
+
+    csv += `Member Name,Meals,Meal Cost,Other Share,Fines,Total Responsibility,Paid,Net Balance,Status\n`;
+    memberSettlements.forEach(m => {
+      csv += `"${m.name}",${m.meals},${m.mealCost},${m.otherShare},${m.fines},${m.totalResponsibility},${m.paid},${m.balance},${m.status}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `MessMate_Report_${currentMonthName.replace(/\s+/g, "_")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
 
   return (
     <div>
@@ -22,15 +49,15 @@ export default function Reports() {
         title="Reports"
         subtitle="Monthly financial and meal reports"
         action={
-          <div className="flex gap-2">
-            <Btn size="sm" variant="secondary"><Download size={14} />Export PDF</Btn>
-            <Btn size="sm" variant="secondary"><Download size={14} />Export Excel</Btn>
+          <div className="flex gap-2 print:hidden">
+            <Btn size="sm" variant="secondary" onClick={handleExportPDF}><Download size={14} />Export PDF / Print</Btn>
+            <Btn size="sm" variant="secondary" onClick={handleExportCSV}><Download size={14} />Export CSV (Excel)</Btn>
           </div>
         }
       />
 
       {/* Month selector */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 print:hidden">
         <button className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-indigo-600 text-white shadow-sm">
           {currentMonthName}
         </button>
